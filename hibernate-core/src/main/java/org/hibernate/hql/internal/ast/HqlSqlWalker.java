@@ -484,7 +484,7 @@ public class HqlSqlWalker extends HqlSqlBaseWalker implements ErrorReporter, Par
 				FromElement fromElement = dotNode.getFromElement();
 				if ( referencedFromElement != null ) {
 					if ( fromElement != referencedFromElement ) {
-						throw new HibernateException( "with-clause referenced two different from-clause elements" );
+						//throw new HibernateException( "with-clause referenced two different from-clause elements" );
 					}
 				}
 				else {
