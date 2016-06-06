@@ -175,6 +175,10 @@ public abstract class Collection implements Fetchable, Value, Filterable {
 		return element instanceof OneToMany;
 	}
 
+	public boolean isEmbedded() {
+		return element instanceof Component;
+	}
+
 	public boolean isInverse() {
 		return inverse;
 	}
@@ -355,7 +359,13 @@ public abstract class Collection implements Fetchable, Value, Filterable {
 			);
 		}
 		if ( !isOneToMany() ) {
-			checkColumnDuplication( cols, getElement().getColumnIterator() );
+			if ( isEmbedded() ) {
+				Component comp = (Component) getElement();
+				checkColumnDuplication( cols, comp.getInsertableOrUpdatableColumnIterator() );
+			}
+			else {
+				checkColumnDuplication( cols, getElement().getColumnIterator() );
+			}
 		}
 	}
 

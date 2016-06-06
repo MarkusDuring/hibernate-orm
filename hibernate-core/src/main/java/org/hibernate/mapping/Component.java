@@ -111,6 +111,20 @@ public class Component extends SimpleValue implements MetaAttributable {
 		return new JoinedIterator( iters );
 	}
 
+	@SuppressWarnings("unchecked")
+	public Iterator<Selectable> getInsertableOrUpdatableColumnIterator() {
+		ArrayList<Iterator> iters = new ArrayList<Iterator>( getPropertySpan() );
+		Iterator iter = getPropertyIterator();
+		int i=0;
+		while ( iter.hasNext() ) {
+			Property prop = (Property) iter.next();
+			if ( prop.isUpdateable() || prop.isInsertable() ) {
+				iters.add( prop.getColumnIterator() );
+			}
+		}
+		return new JoinedIterator( iters.toArray( new Iterator[ iters.size() ] ) );
+	}
+
 	public boolean isEmbedded() {
 		return embedded;
 	}
