@@ -6,7 +6,9 @@
  */
 package org.hibernate.query.sqm.tree.internal;
 
+import org.hibernate.query.criteria.spi.JpaCriteriaBuilderImplementor;
 import org.hibernate.query.sqm.consume.spi.SemanticQueryWalker;
+import org.hibernate.query.sqm.produce.spi.ParsingContext;
 import org.hibernate.query.sqm.tree.SqmInsertSelectStatement;
 import org.hibernate.query.sqm.tree.SqmQuerySpec;
 import org.hibernate.query.sqm.tree.from.SqmRoot;
@@ -17,8 +19,17 @@ import org.hibernate.query.sqm.tree.from.SqmRoot;
 public class SqmInsertSelectStatementImpl extends AbstractSqmInsertStatement implements SqmInsertSelectStatement {
 	private SqmQuerySpec selectQuery;
 
-	public SqmInsertSelectStatementImpl(SqmRoot insertTarget) {
-		super( insertTarget );
+	public SqmInsertSelectStatementImpl(
+			JpaCriteriaBuilderImplementor criteriaBuilder,
+			ParsingContext parsingContext) {
+		super( criteriaBuilder, parsingContext );
+	}
+
+	public SqmInsertSelectStatementImpl(
+			JpaCriteriaBuilderImplementor criteriaBuilder,
+			ParsingContext parsingContext,
+			SqmRoot insertTarget) {
+		super( criteriaBuilder, parsingContext, insertTarget );
 	}
 
 	@Override

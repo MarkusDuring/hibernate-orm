@@ -6,11 +6,12 @@
  */
 package org.hibernate.query.sqm.tree;
 
+import org.hibernate.query.criteria.spi.JpaCriteriaUpdate;
 import org.hibernate.query.sqm.tree.set.SqmSetClause;
 
 /**
  * @author Steve Ebersole
  */
-public interface SqmUpdateStatement extends SqmDeleteOrUpdateStatement{
+public interface SqmUpdateStatement extends SqmDeleteOrUpdateStatement, JpaCriteriaUpdate {
 	SqmSetClause getSetClause();
 }

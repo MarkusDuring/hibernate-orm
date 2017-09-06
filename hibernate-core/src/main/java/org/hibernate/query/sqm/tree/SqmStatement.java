@@ -8,6 +8,9 @@ package org.hibernate.query.sqm.tree;
 
 import java.util.Set;
 
+import javax.persistence.criteria.CommonAbstractCriteria;
+
+import org.hibernate.query.criteria.spi.JpaCriteriaNode;
 import org.hibernate.query.sqm.consume.spi.SemanticQueryWalker;
 
 /**
@@ -15,7 +18,7 @@ import org.hibernate.query.sqm.consume.spi.SemanticQueryWalker;
  *
  * @author Steve Ebersole
  */
-public interface SqmStatement {
+public interface SqmStatement extends JpaCriteriaNode, CommonAbstractCriteria {
 	Set<SqmParameter> getQueryParameters();
 
 	<T> T accept(SemanticQueryWalker<T> walker);

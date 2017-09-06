@@ -6,6 +6,7 @@
  */
 package org.hibernate.query.sqm.tree.select;
 
+import org.hibernate.query.criteria.spi.JpaExpressionImplementor;
 import org.hibernate.query.sqm.tree.expression.SqmExpression;
 
 /**
@@ -13,7 +14,7 @@ import org.hibernate.query.sqm.tree.expression.SqmExpression;
  *
  * @author Steve Ebersole
  */
-public class SqmSelection implements SqmAliasedExpression {
+public class SqmSelection implements SqmAliasedExpression, JpaExpressionImplementor {
 	private final SqmExpression selectExpression;
 	private final String alias;
 
@@ -28,6 +29,11 @@ public class SqmSelection implements SqmAliasedExpression {
 
 	@Override
 	public SqmExpression getExpression() {
+		return selectExpression;
+	}
+
+	@Override
+	public SqmExpression getSqmExpression() {
 		return selectExpression;
 	}
 

@@ -6,6 +6,8 @@
  */
 package org.hibernate.query.sqm.tree.from;
 
+import javax.persistence.criteria.Root;
+
 import org.hibernate.metamodel.model.domain.spi.EntityDescriptor;
 import org.hibernate.query.sqm.consume.spi.SemanticQueryWalker;
 import org.hibernate.query.sqm.tree.expression.domain.SqmEntityReference;
@@ -14,7 +16,7 @@ import org.hibernate.sql.ast.produce.metamodel.spi.EntityValuedExpressableType;
 /**
  * @author Steve Ebersole
  */
-public class SqmRoot extends AbstractSqmFrom {
+public class SqmRoot extends AbstractSqmFrom implements Root {
 	public SqmRoot(
 			SqmFromElementSpace fromElementSpace,
 			String uid,

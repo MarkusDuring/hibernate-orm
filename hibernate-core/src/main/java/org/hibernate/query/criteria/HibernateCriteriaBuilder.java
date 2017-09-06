@@ -518,6 +518,8 @@ public interface HibernateCriteriaBuilder extends CriteriaBuilder {
 	@SuppressWarnings("unchecked")
 	<T> JpaInImplementor<T> in(Expression<? extends T> expression, T... values);
 
+	<T> JpaInImplementor<T> in(Expression<? extends T> expression, Collection<T> values);
+
 	@Override
 	<Y> JpaCoalesce<Y> coalesce(Expression<? extends Y> x, Expression<? extends Y> y);
 

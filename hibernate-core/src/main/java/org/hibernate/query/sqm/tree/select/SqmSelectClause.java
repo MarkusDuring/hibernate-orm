@@ -19,7 +19,7 @@ import org.hibernate.query.sqm.tree.expression.SqmExpression;
  * @author Steve Ebersole
  */
 public class SqmSelectClause implements SqmAliasedExpressionContainer<SqmSelection> {
-	private final boolean distinct;
+	private boolean distinct;
 	private List<SqmSelection> selections;
 
 	public SqmSelectClause(boolean distinct) {
@@ -39,6 +39,10 @@ public class SqmSelectClause implements SqmAliasedExpressionContainer<SqmSelecti
 		return distinct;
 	}
 
+	public void setDistinct(boolean distinct) {
+		this.distinct = distinct;
+	}
+
 	public List<SqmSelection> getSelections() {
 		if ( selections == null ) {
 			return Collections.emptyList();
@@ -53,6 +57,10 @@ public class SqmSelectClause implements SqmAliasedExpressionContainer<SqmSelecti
 			selections = new ArrayList<>();
 		}
 		selections.add( selection );
+	}
+
+	public void setSelections(List<SqmSelection> selections) {
+		this.selections = selections;
 	}
 
 	@Override

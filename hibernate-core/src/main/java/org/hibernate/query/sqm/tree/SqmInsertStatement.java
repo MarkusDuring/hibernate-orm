@@ -8,6 +8,7 @@ package org.hibernate.query.sqm.tree;
 
 import java.util.List;
 
+import org.hibernate.query.criteria.spi.JpaCriteriaInsert;
 import org.hibernate.query.sqm.tree.expression.domain.SqmSingularAttributeReference;
 import org.hibernate.query.sqm.tree.from.SqmRoot;
 
@@ -17,7 +18,7 @@ import org.hibernate.query.sqm.tree.from.SqmRoot;
  *
  * @author Steve Ebersole
  */
-public interface SqmInsertStatement extends SqmNonSelectStatement {
+public interface SqmInsertStatement extends SqmNonSelectStatement, JpaCriteriaInsert {
 	SqmRoot getInsertTarget();
 	List<SqmSingularAttributeReference> getStateFields();
 }

@@ -12,8 +12,11 @@ import org.hibernate.query.sqm.tree.expression.SqmExpression;
  * @author Christian Beikov
  */
 public class SqmLimitOffsetClause {
-	private final SqmExpression limitExpression;
-	private final SqmExpression offsetExpression;
+	private SqmExpression limitExpression;
+	private SqmExpression offsetExpression;
+
+	public SqmLimitOffsetClause() {
+	}
 
 	public SqmLimitOffsetClause(SqmExpression limitExpression, SqmExpression offsetExpression) {
 		this.limitExpression = limitExpression;

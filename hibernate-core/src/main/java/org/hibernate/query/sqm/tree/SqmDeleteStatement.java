@@ -6,8 +6,11 @@
  */
 package org.hibernate.query.sqm.tree;
 
+
+import org.hibernate.query.criteria.spi.JpaCriteriaDelete;
+
 /**
  * @author Steve Ebersole
  */
-public interface SqmDeleteStatement extends SqmDeleteOrUpdateStatement {
+public interface SqmDeleteStatement extends SqmDeleteOrUpdateStatement, JpaCriteriaDelete {
 }

@@ -10,6 +10,8 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import org.hibernate.query.criteria.spi.JpaCriteriaBuilderImplementor;
+import org.hibernate.query.sqm.produce.spi.ParsingContext;
 import org.hibernate.query.sqm.tree.SqmInsertStatement;
 import org.hibernate.query.sqm.tree.expression.domain.SqmSingularAttributeReference;
 import org.hibernate.query.sqm.tree.from.SqmRoot;
@@ -20,10 +22,20 @@ import org.hibernate.query.sqm.tree.from.SqmRoot;
  * @author Steve Ebersole
  */
 public abstract class AbstractSqmInsertStatement extends AbstractSqmStatement implements SqmInsertStatement {
-	private final SqmRoot insertTarget;
+	private SqmRoot insertTarget;
 	private List<SqmSingularAttributeReference> stateFields;
 
-	public AbstractSqmInsertStatement(SqmRoot insertTarget) {
+	public AbstractSqmInsertStatement(
+			JpaCriteriaBuilderImplementor criteriaBuilder,
+			ParsingContext parsingContext) {
+		super( criteriaBuilder, parsingContext );
+	}
+
+	public AbstractSqmInsertStatement(
+			JpaCriteriaBuilderImplementor criteriaBuilder,
+			ParsingContext parsingContext,
+			SqmRoot insertTarget) {
+		super( criteriaBuilder, parsingContext );
 		this.insertTarget = insertTarget;
 	}
 

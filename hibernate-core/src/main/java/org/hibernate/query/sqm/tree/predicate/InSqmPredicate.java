@@ -6,11 +6,12 @@
  */
 package org.hibernate.query.sqm.tree.predicate;
 
+import org.hibernate.query.criteria.JpaInImplementor;
 import org.hibernate.query.sqm.tree.expression.SqmExpression;
 
 /**
  * @author Steve Ebersole
  */
-public interface InSqmPredicate extends NegatableSqmPredicate {
+public interface InSqmPredicate extends NegatableSqmPredicate, JpaInImplementor {
 	SqmExpression getTestExpression();
 }

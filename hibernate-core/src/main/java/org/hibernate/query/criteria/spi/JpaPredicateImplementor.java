@@ -8,6 +8,8 @@ package org.hibernate.query.criteria.spi;
 
 import javax.persistence.criteria.Predicate;
 
+import org.hibernate.query.sqm.tree.predicate.SqmPredicate;
+
 /**
  * Hibernate ORM specialization of the JPA {@link javax.persistence.criteria.Predicate}
  * contract.
@@ -24,4 +26,6 @@ public interface JpaPredicateImplementor extends JpaExpressionImplementor<Boolea
 	 * @return {@code true} if this predicate is a junction (AND/OR); {@code false} otherwise
 	 */
 	boolean isJunction();
+
+	SqmPredicate getSqmPredicate();
 }

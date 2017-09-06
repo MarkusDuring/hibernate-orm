@@ -6,11 +6,12 @@
  */
 package org.hibernate.query.sqm.tree.predicate;
 
+import org.hibernate.query.criteria.spi.JpaPredicateImplementor;
 import org.hibernate.query.sqm.consume.spi.SemanticQueryWalker;
 
 /**
  * @author Steve Ebersole
  */
-public interface SqmPredicate {
+public interface SqmPredicate extends JpaPredicateImplementor {
 	<T> T accept(SemanticQueryWalker<T> walker);
 }

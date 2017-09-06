@@ -28,6 +28,15 @@ public class SqmQuerySpec implements SqmFromClauseContainer, SqmWhereClauseConta
 
 	// todo : group-by + having
 
+
+	public SqmQuerySpec() {
+		this.fromClause = new SqmFromClause();
+		this.selectClause = new SqmSelectClause( false );
+		this.whereClause = new SqmWhereClause(  );
+		this.orderByClause = new SqmOrderByClause();
+		this.limitOffsetClause = new SqmLimitOffsetClause(  );
+	}
+
 	public SqmQuerySpec(
 			SqmFromClause fromClause,
 			SqmSelectClause selectClause,

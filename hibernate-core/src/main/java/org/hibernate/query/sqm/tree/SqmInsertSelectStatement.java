@@ -6,9 +6,11 @@
  */
 package org.hibernate.query.sqm.tree;
 
+import org.hibernate.query.criteria.spi.JpaCriteriaInsertSelect;
+
 /**
  * @author Steve Ebersole
  */
-public interface SqmInsertSelectStatement extends SqmInsertStatement {
+public interface SqmInsertSelectStatement extends SqmInsertStatement, JpaCriteriaInsertSelect {
 	SqmQuerySpec getSelectQuery();
 }

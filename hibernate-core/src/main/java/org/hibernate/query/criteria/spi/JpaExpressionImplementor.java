@@ -12,6 +12,8 @@ import java.util.Collection;
 import javax.persistence.criteria.Expression;
 
 import org.hibernate.Incubating;
+import org.hibernate.query.criteria.JpaInImplementor;
+import org.hibernate.query.sqm.tree.expression.SqmExpression;
 import org.hibernate.type.descriptor.java.spi.JavaTypeDescriptor;
 
 /**
@@ -23,6 +25,9 @@ import org.hibernate.type.descriptor.java.spi.JavaTypeDescriptor;
  */
 @Incubating
 public interface JpaExpressionImplementor<T> extends JpaSelectionImplementor<T>, Expression<T> {
+
+	SqmExpression getSqmExpression();
+
 	<X> JpaExpressionImplementor<X> as(JavaTypeDescriptor<X> type);
 
 	/**
@@ -104,17 +109,29 @@ public interface JpaExpressionImplementor<T> extends JpaSelectionImplementor<T>,
 		);
 	}
 
-	JpaPredicateImplementor isNull();
+	default JpaPredicateImplementor isNull() {
+		return getCriteriaBuilder().isNull( this );
+	}
 
-	JpaPredicateImplementor isNotNull();
+	default JpaPredicateImplementor isNotNull() {
+		return getCriteriaBuilder().isNotNull( this );
+	}
 
-	JpaPredicateImplementor in(Object... values);
+	default JpaPredicateImplementor in(Object... values) {
+		return getCriteriaBuilder().in( this, values );
+	}
 
-	JpaPredicateImplementor in(Expression<?>[] values);
+	default JpaPredicateImplementor in(Expression<?>... values) {
+		return getCriteriaBuilder().in( this, values );
+	}
 
-	JpaPredicateImplementor in(Collection<?> values);
+	default JpaPredicateImplementor in(Collection<?> values) {
+		return getCriteriaBuilder().in( this, values.toArray() );
+	}
 
-	JpaPredicateImplementor in(Expression<Collection<?>> values);
+	default JpaPredicateImplementor in(Expression<Collection<?>> values) {
+		return getCriteriaBuilder().in( this, values );
+	}
 
 	JpaSelectionImplementor<T> alias(String name);
 }

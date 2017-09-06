@@ -571,7 +571,8 @@ public class CriteriaBuilderImpl implements JpaCriteriaBuilderImplementor, Seria
 		return new InPredicate<>( this, expression, values );
 	}
 
-	public <T> In<T> in(Expression<? extends T> expression, Collection<T> values) {
+	@Override
+	public <T> JpaInImplementor<T> in(Expression<? extends T> expression, Collection<T> values) {
 		return new InPredicate<>( this, expression, values );
 	}
 

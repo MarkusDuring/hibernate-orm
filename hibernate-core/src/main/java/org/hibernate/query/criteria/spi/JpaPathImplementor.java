@@ -19,6 +19,7 @@ import org.hibernate.metamodel.model.domain.spi.PersistentAttribute;
 import org.hibernate.query.sqm.produce.spi.criteria.JpaExpression;
 import org.hibernate.query.sqm.produce.spi.criteria.path.JpaPath;
 import org.hibernate.query.sqm.produce.spi.criteria.path.JpaPathSource;
+import org.hibernate.query.sqm.tree.expression.domain.SqmNavigableReference;
 
 /**
  * Hibernate ORM specialization of the JPA {@link Path}
@@ -82,4 +83,6 @@ public interface JpaPathImplementor<X> extends JpaExpressionImplementor<X>, Path
 
 	@Override
 	<Y> JpaPath<Y> get(String attributeName);
+
+	SqmNavigableReference getSqmNavigableReference();
 }
