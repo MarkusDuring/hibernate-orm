@@ -44,6 +44,9 @@ public class MappedSuperclassExtendsEntityTest extends BaseCoreFunctionalTestCas
 	protected Class<?>[] getAnnotatedClasses() {
 		return new Class[] {
 				TestEntity.class,
+				TestEntity2.class,
+				ChildTestEntity1.class,
+				ChildTestEntity2.class,
 				GrandParent.class,
 				Parent.class,
 				Child1.class,
@@ -54,8 +57,19 @@ public class MappedSuperclassExtendsEntityTest extends BaseCoreFunctionalTestCas
 	@Test
 	@TestForIssue(jiraKey = "HHH-12332")
 	public void testQueryingSingle() {
+		// Make sure joins in the produced query for the model work properly
 		doInHibernate( this::sessionFactory, s -> {
-			s.createQuery( "from TestEntity p" ).getResultList();
+			s.createQuery( "FROM TestEntity testEntity " +
+					"JOIN testEntity.parents parent " +
+					"JOIN parent.entities e1 " +
+					"JOIN parent.entities2 e2 " +
+					"JOIN e1.parents p1 " +
+					"JOIN e2.parents p2 " +
+					"JOIN p1.entities " +
+					"JOIN p1.entities2 " +
+					"JOIN p2.entities " +
+					"JOIN p2.entities2"
+			).getResultList();
 		} );
 	}
 
@@ -82,10 +96,12 @@ public class MappedSuperclassExtendsEntityTest extends BaseCoreFunctionalTestCas
 	}
 
 	@MappedSuperclass
-	public static abstract class Parent extends GrandParent {
+	public static abstract class Parent<T extends TestEntity2> extends GrandParent {
 
 		@ManyToMany(mappedBy = "parents")
 		private List<TestEntity> entities;
+		@ManyToMany(mappedBy = "parents")
+		private List<T> entities2;
 
 		public List<TestEntity> getEntities() {
 			return entities;
@@ -93,6 +109,14 @@ public class MappedSuperclassExtendsEntityTest extends BaseCoreFunctionalTestCas
 
 		public void setEntities(List<TestEntity> entities) {
 			this.entities = entities;
+		}
+
+		public List<T> getEntities2() {
+			return entities2;
+		}
+
+		public void setEntities2(List<T> entities2) {
+			this.entities2 = entities2;
 		}
 
 	}
@@ -121,16 +145,52 @@ public class MappedSuperclassExtendsEntityTest extends BaseCoreFunctionalTestCas
 		public void setParents(List<GrandParent> parents) {
 			this.parents = parents;
 		}
+	}
+
+	@Inheritance(strategy = InheritanceType.JOINED)
+	@Entity(name = "TestEntity2")
+	public static class TestEntity2 {
+
+		@Id
+		@GeneratedValue
+		private Long id;
+		@ManyToMany
+		private List<GrandParent> parents;
+
+		public Long getId() {
+			return id;
+		}
+
+		public void setId(Long id) {
+			this.id = id;
+		}
+
+		public List<GrandParent> getParents() {
+			return parents;
+		}
+
+		public void setParents(List<GrandParent> parents) {
+			this.parents = parents;
+		}
+	}
+
+	@Entity(name = "ChildTestEntity1")
+	public static class ChildTestEntity1 extends TestEntity2 {
+
+	}
+
+	@Entity(name = "ChildTestEntity2")
+	public static class ChildTestEntity2 extends TestEntity2 {
 
 	}
 
 	@Entity(name = "Child1")
 	@DiscriminatorValue("CHILD1")
-	public static class Child1 extends Parent {
+	public static class Child1 extends Parent<ChildTestEntity1> {
 	}
 
 	@Entity(name = "Child2")
 	@DiscriminatorValue("CHILD2")
-	public static class Child2 extends Parent {
+	public static class Child2 extends Parent<ChildTestEntity2> {
 	}
 }

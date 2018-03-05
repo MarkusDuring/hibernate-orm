@@ -17,9 +17,7 @@ import org.hibernate.internal.CoreLogging;
 import org.hibernate.internal.CoreMessageLogger;
 import org.hibernate.internal.util.StringHelper;
 import org.hibernate.internal.util.collections.ArrayHelper;
-import org.hibernate.mapping.Collection;
-import org.hibernate.mapping.MappedSuperclass;
-import org.hibernate.mapping.PersistentClass;
+import org.hibernate.mapping.*;
 import org.hibernate.sql.Template;
 import org.hibernate.type.AnyType;
 import org.hibernate.type.AssociationType;
@@ -186,7 +184,11 @@ public abstract class AbstractPropertyMapping implements PropertyMapping {
 				Collection thisCollection = metadata.getCollectionBinding( ( (CollectionType) existingType ).getRole() );
 				Collection otherCollection = metadata.getCollectionBinding( ( (CollectionType) type ).getRole() );
 
-				if ( thisCollection == otherCollection ) {
+				if ( thisCollection == null || otherCollection == null ) {
+					// This can only happen when we previously replaced a "concrete" type by a more "general" ad-hoc type
+					return;
+				}
+				else if ( thisCollection.isSame( otherCollection ) ) {
 					logDuplicateRegistration(
 							path,
 							existingType,
@@ -195,14 +197,12 @@ public abstract class AbstractPropertyMapping implements PropertyMapping {
 					return;
 				}
 
-				Collection commonCollection = getSuperCollection(
+				newType = getSuperCollectionType(
 						metadata,
-						thisCollection.getOwner(),
-						otherCollection.getOwner(),
-						thisCollection.getReferencedPropertyName()
+						thisCollection,
+						otherCollection,
+						path
 				);
-
-				newType = commonCollection.getType();
 			}
 			else if ( type instanceof EntityType ) {
 				EntityType entityType1 = (EntityType) existingType;
@@ -268,73 +268,86 @@ public abstract class AbstractPropertyMapping implements PropertyMapping {
 	}
 
 	private PersistentClass getCommonPersistentClass(PersistentClass clazz1, PersistentClass clazz2) {
-		while ( !clazz2.getMappedClass().isAssignableFrom( clazz1.getMappedClass() ) ) {
+		while ( clazz2 != null && !clazz2.getMappedClass().isAssignableFrom( clazz1.getMappedClass() ) ) {
 			clazz2 = clazz2.getSuperclass();
 		}
 		return clazz2;
 	}
 
-	private Collection getSuperCollection(MetadataImplementor metadata, PersistentClass clazz1, PersistentClass commonPersistentClass, String propertyName) {
-		Class<?> c1 = clazz1.getMappedClass();
-		Class<?> c2 = commonPersistentClass.getMappedClass();
-		MappedSuperclass commonMappedSuperclass = null;
+	private CollectionType getSuperCollectionType(MetadataImplementor metadata, Collection collection1, Collection collection2, String propertyName) {
+		PersistentClass clazz1 = collection1.getOwner();
+		PersistentClass clazz2 = collection2.getOwner();
+		PersistentClass commonPersistentClass = getCommonPersistentClass( clazz1, clazz2 );
+		PersistentClass persistentClass = commonPersistentClass;
 
-		// First we traverse up the clazz2/commonPersistentClass super types until we find a common type
-		while ( !c2.isAssignableFrom( c1 ) ) {
-			if ( commonPersistentClass == null) {
-				if ( commonMappedSuperclass.getSuperPersistentClass() == null ) {
-					commonMappedSuperclass = commonMappedSuperclass.getSuperMappedSuperclass();
-					commonPersistentClass = null;
-				}
-				else {
-					commonPersistentClass = commonMappedSuperclass.getSuperPersistentClass();
-					commonMappedSuperclass = null;
-				}
+		// First try to find a collection binding for a common super class
+		while ( persistentClass != null ) {
+			Collection collection = metadata.getCollectionBinding( persistentClass.getEntityName() + "." + propertyName );
+			if ( collection != null ) {
+				return collection.getCollectionType();
 			}
-			else {
-				if ( commonPersistentClass.getSuperclass() == null ) {
-					commonMappedSuperclass = commonPersistentClass.getSuperMappedSuperclass();
-					commonPersistentClass = null;
-				}
-				else {
-					commonPersistentClass = commonPersistentClass.getSuperclass();
-					commonMappedSuperclass = null;
-				}
-			}
+
+			persistentClass = persistentClass.getSuperclass();
 		}
 
-		// Then we traverse it's types up as long as possible until we find a type that has a collection binding
-		while ( c2 != Object.class ) {
-			if ( commonMappedSuperclass != null ) {
-				Collection collection = metadata.getCollectionBinding( commonMappedSuperclass.getMappedClass().getName() + "." + propertyName );
-				if ( collection != null ) {
-					return collection;
-				}
+		// TODO: This is ugly, but for now, we can't properly construct
+		if ( true ) {
+			return null;
+		}
 
-				if ( commonMappedSuperclass.getSuperPersistentClass() == null ) {
-					commonMappedSuperclass = commonMappedSuperclass.getSuperMappedSuperclass();
-					commonPersistentClass = null;
-				}
-				else {
-					commonPersistentClass = commonMappedSuperclass.getSuperPersistentClass();
-					commonMappedSuperclass = null;
-				}
+		// If we can't find one, we need to build an ad-hoc collection type
+		String role = commonPersistentClass.getClassName() + "." + propertyName;
+		if ( collection1 instanceof Set ) {
+			Set set = (Set) collection1;
+			if ( set.isSorted() ) {
+				return metadata.getTypeResolver()
+						.getTypeFactory()
+						.sortedSet( role, propertyName, set.getComparator() );
+			}
+			else if ( set.hasOrder() ) {
+				return metadata.getTypeResolver()
+						.getTypeFactory()
+						.orderedSet( role, propertyName );
 			}
 			else {
-				Collection collection = metadata.getCollectionBinding( commonPersistentClass.getEntityName() + "." + propertyName );
-				if ( collection != null ) {
-					return collection;
-				}
-
-				if ( commonPersistentClass.getSuperclass() == null ) {
-					commonMappedSuperclass = commonPersistentClass.getSuperMappedSuperclass();
-					commonPersistentClass = null;
-				}
-				else {
-					commonPersistentClass = commonPersistentClass.getSuperclass();
-					commonMappedSuperclass = null;
-				}
+				return metadata.getTypeResolver()
+						.getTypeFactory()
+						.set( role, propertyName );
 			}
+		} else if ( collection1 instanceof Bag ) {
+			return metadata.getTypeResolver()
+					.getTypeFactory()
+					.bag( role, propertyName );
+		} else if ( collection1 instanceof org.hibernate.mapping.Map ) {
+			org.hibernate.mapping.Map map = (org.hibernate.mapping.Map) collection1;
+			if ( map.isSorted() ) {
+				return metadata.getTypeResolver()
+						.getTypeFactory()
+						.sortedMap( role, propertyName, map.getComparator() );
+			}
+			else if ( map.hasOrder() ) {
+				return metadata.getTypeResolver()
+						.getTypeFactory()
+						.orderedMap( role, propertyName );
+			}
+			else {
+				return metadata.getTypeResolver()
+						.getTypeFactory()
+						.map( role, propertyName );
+			}
+		} else if ( collection1 instanceof org.hibernate.mapping.Array ) {
+			org.hibernate.mapping.Array array = (org.hibernate.mapping.Array) collection1;
+			return metadata.getTypeResolver()
+					.getTypeFactory()
+					.array( role, propertyName, array.getElementClass() );
+		} else if ( collection1 instanceof org.hibernate.mapping.List ) {
+			return metadata.getTypeResolver()
+					.getTypeFactory()
+					.list( role, propertyName );
+		} else if ( collection1 instanceof IdentifierBag ) {
+			return metadata.getTypeResolver()
+					.getTypeFactory()
+					.idbag( role, propertyName );
 		}
 
 		return null;
