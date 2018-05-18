@@ -8,6 +8,8 @@ package org.hibernate.query.sqm.tree.expression.domain;
 
 import org.hibernate.metamodel.model.domain.spi.CollectionElementEntity;
 import org.hibernate.query.sqm.consume.spi.SemanticQueryWalker;
+import org.hibernate.query.sqm.produce.spi.SqmCreationContext;
+import org.hibernate.query.sqm.tree.SqmCopyContext;
 import org.hibernate.query.sqm.tree.from.SqmFrom;
 
 /**
@@ -18,8 +20,16 @@ public class SqmMinElementReferenceEntity
 		implements SqmMinElementReference, SqmEntityTypedReference {
 	private SqmFrom exportedFromElement;
 
-	public SqmMinElementReferenceEntity(SqmPluralAttributeReference pluralAttributeBinding) {
-		super( pluralAttributeBinding );
+	public SqmMinElementReferenceEntity(SqmPluralAttributeReference pluralAttributeBinding, SqmCreationContext creationContext) {
+		super( pluralAttributeBinding, creationContext );
+	}
+
+	@Override
+	public SqmMinElementReferenceEntity copy(SqmCopyContext context) {
+		return new SqmMinElementReferenceEntity(
+				getPluralAttributeReference().copy( context ),
+				context.getCreationContext()
+		);
 	}
 
 	@Override

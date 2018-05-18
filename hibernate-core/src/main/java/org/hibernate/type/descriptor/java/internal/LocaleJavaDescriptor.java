@@ -9,10 +9,14 @@ package org.hibernate.type.descriptor.java.internal;
 import java.util.Comparator;
 import java.util.Locale;
 
+import org.hibernate.engine.spi.SessionFactoryImplementor;
+import org.hibernate.query.sqm.tree.expression.SqmLiteral;
+import org.hibernate.query.sqm.tree.expression.SqmLiteralGeneric;
 import org.hibernate.type.descriptor.java.spi.AbstractBasicJavaDescriptor;
 import org.hibernate.type.descriptor.spi.JdbcRecommendedSqlTypeMappingContext;
 import org.hibernate.type.descriptor.spi.WrapperOptions;
 import org.hibernate.type.descriptor.sql.spi.SqlTypeDescriptor;
+import org.hibernate.type.spi.BasicType;
 
 /**
  * Descriptor for {@link Locale} handling.
@@ -37,6 +41,16 @@ public class LocaleJavaDescriptor extends AbstractBasicJavaDescriptor<Locale> {
 	@Override
 	public SqlTypeDescriptor getJdbcRecommendedSqlType(JdbcRecommendedSqlTypeMappingContext context) {
 		return StringJavaDescriptor.INSTANCE.getJdbcRecommendedSqlType( context );
+	}
+
+	@Override
+	public SqmLiteral<Locale> createLiteralExpression(SessionFactoryImplementor sessionFactory, BasicType<Locale> basicType, Locale value) {
+		return new SqmLiteralGeneric<>(
+				sessionFactory,
+				value,
+				basicType,
+				getMutabilityPlan()
+		);
 	}
 
 	@Override

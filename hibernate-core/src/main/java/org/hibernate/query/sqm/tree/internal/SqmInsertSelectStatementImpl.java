@@ -6,9 +6,17 @@
  */
 package org.hibernate.query.sqm.tree.internal;
 
+import org.hibernate.query.sqm.produce.spi.SqmCreationContext;
+import org.hibernate.query.sqm.tree.SqmCopyContext;
 import org.hibernate.query.sqm.tree.SqmInsertSelectStatement;
+import org.hibernate.query.sqm.tree.SqmNode;
 import org.hibernate.query.sqm.tree.SqmQuerySpec;
+import org.hibernate.query.sqm.tree.expression.domain.SqmSingularAttributeReference;
 import org.hibernate.query.sqm.tree.from.SqmRoot;
+
+import javax.persistence.criteria.Predicate;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * @author Steve Ebersole
@@ -16,8 +24,32 @@ import org.hibernate.query.sqm.tree.from.SqmRoot;
 public class SqmInsertSelectStatementImpl extends AbstractSqmInsertStatement implements SqmInsertSelectStatement {
 	private SqmQuerySpec selectQuery;
 
-	public SqmInsertSelectStatementImpl(SqmRoot insertTarget) {
-		super( insertTarget );
+	public SqmInsertSelectStatementImpl(SqmCreationContext creationContext, SqmRoot insertTarget) {
+		super( creationContext, insertTarget );
+	}
+
+	public SqmInsertSelectStatementImpl(SqmCreationContext creationContext, SqmRoot insertTarget, List<SqmSingularAttributeReference> stateFields, SqmQuerySpec selectQuery) {
+		super( creationContext, insertTarget, stateFields );
+		this.selectQuery = selectQuery;
+	}
+
+	@Override
+	public SqmInsertSelectStatement copy(SqmCopyContext context) {
+		// First register the copy instance so that subqueries can look it up
+		SqmInsertSelectStatementImpl statement = new SqmInsertSelectStatementImpl(
+				context.getCreationContext(),
+				getInsertTarget().copy( context ),
+				null,
+				null
+		);
+		// only then copy the query spec
+		statement.selectQuery = selectQuery.copy( context );
+
+		for ( SqmSingularAttributeReference stateField : getStateFields() ) {
+			statement.addInsertTargetStateField( stateField.copy( context ) );
+		}
+
+		return statement;
 	}
 
 	@Override
@@ -27,5 +59,10 @@ public class SqmInsertSelectStatementImpl extends AbstractSqmInsertStatement imp
 
 	public void setSelectQuery(SqmQuerySpec selectQuery) {
 		this.selectQuery = selectQuery;
+	}
+
+	@Override
+	public Predicate getRestriction() {
+		return null;
 	}
 }

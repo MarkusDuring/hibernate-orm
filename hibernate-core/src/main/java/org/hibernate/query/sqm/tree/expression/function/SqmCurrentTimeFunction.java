@@ -6,8 +6,10 @@
  */
 package org.hibernate.query.sqm.tree.expression.function;
 
+import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.metamodel.model.domain.spi.AllowableFunctionReturnType;
 import org.hibernate.query.sqm.consume.spi.SemanticQueryWalker;
+import org.hibernate.query.sqm.tree.SqmCopyContext;
 import org.hibernate.type.spi.StandardSpiBasicTypes;
 
 /**
@@ -16,12 +18,12 @@ import org.hibernate.type.spi.StandardSpiBasicTypes;
 public class SqmCurrentTimeFunction extends AbstractSqmFunction {
 	public static final String NAME = "current_time";
 
-	public SqmCurrentTimeFunction() {
-		super( StandardSpiBasicTypes.TIME );
+	public SqmCurrentTimeFunction(SessionFactoryImplementor sessionFactory) {
+		super( sessionFactory, StandardSpiBasicTypes.TIME );
 	}
 
-	public SqmCurrentTimeFunction(AllowableFunctionReturnType resultType) {
-		super( resultType );
+	public SqmCurrentTimeFunction(SessionFactoryImplementor sessionFactory, AllowableFunctionReturnType resultType) {
+		super( sessionFactory, resultType );
 	}
 
 	@Override
@@ -32,6 +34,11 @@ public class SqmCurrentTimeFunction extends AbstractSqmFunction {
 	@Override
 	public boolean hasArguments() {
 		return false;
+	}
+
+	@Override
+	public SqmCurrentTimeFunction copy(SqmCopyContext context) {
+		return this;
 	}
 
 	@Override

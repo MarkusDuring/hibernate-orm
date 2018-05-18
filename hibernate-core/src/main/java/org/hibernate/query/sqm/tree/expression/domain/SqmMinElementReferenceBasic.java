@@ -9,13 +9,23 @@ package org.hibernate.query.sqm.tree.expression.domain;
 import org.hibernate.metamodel.model.domain.spi.BasicCollectionElement;
 import org.hibernate.query.sqm.NotYetImplementedException;
 import org.hibernate.query.sqm.consume.spi.SemanticQueryWalker;
+import org.hibernate.query.sqm.produce.spi.SqmCreationContext;
+import org.hibernate.query.sqm.tree.SqmCopyContext;
 
 /**
  * @author Steve Ebersole
  */
 public class SqmMinElementReferenceBasic extends AbstractSpecificSqmElementReference implements SqmMinElementReference {
-	public SqmMinElementReferenceBasic(SqmPluralAttributeReference pluralAttributeBinding) {
-		super( pluralAttributeBinding );
+	public SqmMinElementReferenceBasic(SqmPluralAttributeReference pluralAttributeBinding, SqmCreationContext creationContext) {
+		super( pluralAttributeBinding, creationContext );
+	}
+
+	@Override
+	public SqmMinElementReferenceBasic copy(SqmCopyContext context) {
+		return new SqmMinElementReferenceBasic(
+				getPluralAttributeReference().copy( context ),
+				context.getCreationContext()
+		);
 	}
 
 	@Override

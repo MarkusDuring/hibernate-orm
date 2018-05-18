@@ -8,6 +8,9 @@ package org.hibernate.type.descriptor.java.internal;
 
 import java.sql.Types;
 
+import org.hibernate.engine.spi.SessionFactoryImplementor;
+import org.hibernate.query.sqm.tree.expression.SqmLiteral;
+import org.hibernate.query.sqm.tree.expression.SqmLiteralGeneric;
 import org.hibernate.type.descriptor.java.spi.AbstractNumericJavaDescriptor;
 import org.hibernate.type.descriptor.java.spi.Primitive;
 import org.hibernate.type.descriptor.spi.JdbcRecommendedSqlTypeMappingContext;
@@ -15,6 +18,7 @@ import org.hibernate.type.descriptor.spi.WrapperOptions;
 import org.hibernate.type.descriptor.sql.spi.SqlTypeDescriptor;
 import org.hibernate.metamodel.model.domain.spi.ByteVersionSupport;
 import org.hibernate.metamodel.model.domain.spi.VersionSupport;
+import org.hibernate.type.spi.BasicType;
 
 /**
  * Descriptor for {@link Byte} handling.
@@ -33,6 +37,16 @@ public class ByteJavaDescriptor extends AbstractNumericJavaDescriptor<Byte> impl
 	@Override
 	public SqlTypeDescriptor getJdbcRecommendedSqlType(JdbcRecommendedSqlTypeMappingContext context) {
 		return context.getTypeConfiguration().getSqlTypeDescriptorRegistry().getDescriptor( Types.TINYINT );
+	}
+
+	@Override
+	public SqmLiteral<Byte> createLiteralExpression(SessionFactoryImplementor sessionFactory, BasicType<Byte> basicType, Byte value) {
+		return new SqmLiteralGeneric<>(
+				sessionFactory,
+				value,
+				basicType,
+				getMutabilityPlan()
+		);
 	}
 
 	@Override

@@ -9,14 +9,13 @@ package org.hibernate.metamodel.model.domain.internal;
 import java.io.Serializable;
 
 import org.hibernate.collection.internal.PersistentBag;
+import org.hibernate.collection.spi.CollectionClassification;
 import org.hibernate.collection.spi.PersistentCollection;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
-import org.hibernate.mapping.Collection;
 import org.hibernate.mapping.Property;
 import org.hibernate.metamodel.model.creation.spi.RuntimeModelCreationContext;
 import org.hibernate.metamodel.model.domain.spi.ManagedTypeDescriptor;
 import org.hibernate.metamodel.model.domain.spi.PersistentCollectionDescriptor;
-import org.hibernate.metamodel.model.relational.spi.Table;
 
 /**
  * @author Steve Ebersole
@@ -26,7 +25,7 @@ public class PersistentBagDescriptorImpl extends PersistentListDescriptorImpl {
 			Property bootProperty,
 			ManagedTypeDescriptor runtimeContainer,
 			RuntimeModelCreationContext context) {
-		super( bootProperty, runtimeContainer, context );
+		super( bootProperty, runtimeContainer, CollectionClassification.BAG, context );
 	}
 
 	@Override

@@ -102,7 +102,7 @@ public class FunctionReturnImpl implements FunctionReturnImplementor {
 		return ormType == null ? null : ormType.getJavaType();
 	}
 
-	@Override
+//	@Override
 	public void allowMultiValuedBinding() {
 		// no-op
 	}

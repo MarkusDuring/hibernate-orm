@@ -31,7 +31,8 @@ public abstract class AbstractSqmCollectionIndexReference
 	private final PluralPersistentAttribute pluralAttributeReference;
 	private final NavigablePath propertyPath;
 
-	public AbstractSqmCollectionIndexReference(SqmPluralAttributeReference pluralAttributeBinding) {
+	public AbstractSqmCollectionIndexReference(SqmPluralAttributeReference pluralAttributeBinding, SqmCreationContext creationContext) {
+		super( creationContext );
 		this.attributeReference = pluralAttributeBinding;
 		this.pluralAttributeReference = pluralAttributeBinding.getReferencedNavigable();
 

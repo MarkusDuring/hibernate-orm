@@ -10,10 +10,14 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.sql.Types;
 
+import org.hibernate.engine.spi.SessionFactoryImplementor;
+import org.hibernate.query.sqm.tree.expression.SqmLiteral;
+import org.hibernate.query.sqm.tree.expression.SqmLiteralBigDecimal;
 import org.hibernate.type.descriptor.java.spi.AbstractNumericJavaDescriptor;
 import org.hibernate.type.descriptor.spi.JdbcRecommendedSqlTypeMappingContext;
 import org.hibernate.type.descriptor.spi.WrapperOptions;
 import org.hibernate.type.descriptor.sql.spi.SqlTypeDescriptor;
+import org.hibernate.type.spi.BasicType;
 
 /**
  * Descriptor for {@link BigDecimal} handling.
@@ -30,6 +34,11 @@ public class BigDecimalJavaDescriptor extends AbstractNumericJavaDescriptor<BigD
 	@Override
 	public SqlTypeDescriptor getJdbcRecommendedSqlType(JdbcRecommendedSqlTypeMappingContext context) {
 		return context.getTypeConfiguration().getSqlTypeDescriptorRegistry().getDescriptor( Types.NUMERIC );
+	}
+
+	@Override
+	public SqmLiteral<BigDecimal> createLiteralExpression(SessionFactoryImplementor sessionFactory, BasicType<BigDecimal> basicType, BigDecimal value) {
+		return new SqmLiteralBigDecimal( sessionFactory, value, basicType );
 	}
 
 	@SuppressWarnings({ "unchecked" })

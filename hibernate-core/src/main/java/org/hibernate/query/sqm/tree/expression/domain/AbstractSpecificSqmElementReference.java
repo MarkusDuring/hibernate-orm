@@ -16,8 +16,8 @@ import org.hibernate.query.sqm.tree.expression.SqmExpression;
 public abstract class AbstractSpecificSqmElementReference
 		extends AbstractSqmCollectionElementReference
 		implements SqmNavigableReference, SqmRestrictedCollectionElementReference {
-	public AbstractSpecificSqmElementReference(SqmPluralAttributeReference pluralAttributeBinding) {
-		super( pluralAttributeBinding );
+	public AbstractSpecificSqmElementReference(SqmPluralAttributeReference pluralAttributeBinding, SqmCreationContext creationContext) {
+		super( pluralAttributeBinding, creationContext );
 	}
 
 	@Override

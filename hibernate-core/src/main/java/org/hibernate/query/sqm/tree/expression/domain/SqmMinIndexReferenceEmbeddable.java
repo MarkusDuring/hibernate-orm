@@ -7,6 +7,8 @@
 package org.hibernate.query.sqm.tree.expression.domain;
 
 import org.hibernate.metamodel.model.domain.spi.EmbeddedValuedNavigable;
+import org.hibernate.query.sqm.produce.spi.SqmCreationContext;
+import org.hibernate.query.sqm.tree.SqmCopyContext;
 import org.hibernate.query.sqm.tree.from.SqmFrom;
 
 /**
@@ -18,8 +20,16 @@ public class SqmMinIndexReferenceEmbeddable
 
 	private SqmFrom exportedFromElement;
 
-	public SqmMinIndexReferenceEmbeddable(SqmPluralAttributeReference pluralAttributeBinding) {
-		super( pluralAttributeBinding );
+	public SqmMinIndexReferenceEmbeddable(SqmPluralAttributeReference pluralAttributeBinding, SqmCreationContext creationContext) {
+		super( pluralAttributeBinding, creationContext );
+	}
+
+	@Override
+	public SqmMinIndexReferenceEmbeddable copy(SqmCopyContext context) {
+		return new SqmMinIndexReferenceEmbeddable(
+				getPluralAttributeReference().copy( context ),
+				context.getCreationContext()
+		);
 	}
 
 	@Override

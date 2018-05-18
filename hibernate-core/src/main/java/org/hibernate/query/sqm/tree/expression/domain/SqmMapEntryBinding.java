@@ -6,12 +6,15 @@
  */
 package org.hibernate.query.sqm.tree.expression.domain;
 
-import java.util.Map;
-
+import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.query.sqm.consume.spi.SemanticQueryWalker;
+import org.hibernate.query.sqm.tree.SqmCopyContext;
+import org.hibernate.query.sqm.tree.expression.AbstractSqmExpression;
 import org.hibernate.query.sqm.tree.expression.SqmExpression;
 import org.hibernate.sql.ast.produce.metamodel.spi.ExpressableType;
 import org.hibernate.type.descriptor.java.spi.BasicJavaDescriptor;
+
+import java.util.Map;
 
 /**
  * Represents the ENTRY() function for obtaining the map entries from a {@code Map}-typed association.
@@ -19,15 +22,26 @@ import org.hibernate.type.descriptor.java.spi.BasicJavaDescriptor;
  * @author Gunnar Morling
  * @author Steve Ebersole
  */
-public class SqmMapEntryBinding implements SqmExpression, ExpressableType {
+public class SqmMapEntryBinding extends AbstractSqmExpression implements SqmExpression, ExpressableType {
 	private final SqmPluralAttributeReference attributeBinding;
 	private final BasicJavaDescriptor<Map.Entry> mapEntryTypeDescriptor;
 
 	public SqmMapEntryBinding(
 			SqmPluralAttributeReference attributeBinding,
-			BasicJavaDescriptor<Map.Entry> mapEntryTypeDescriptor) {
+			BasicJavaDescriptor<Map.Entry> mapEntryTypeDescriptor,
+			SessionFactoryImplementor sessionFactory) {
+		super( sessionFactory );
 		this.attributeBinding = attributeBinding;
 		this.mapEntryTypeDescriptor = mapEntryTypeDescriptor;
+	}
+
+	@Override
+	public SqmMapEntryBinding copy(SqmCopyContext context) {
+		return new SqmMapEntryBinding(
+				attributeBinding.copy( context ),
+				mapEntryTypeDescriptor,
+				getSessionFactory()
+		);
 	}
 
 	public SqmPluralAttributeReference getAttributeAttributeReference() {

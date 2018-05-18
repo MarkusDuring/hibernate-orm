@@ -7,16 +7,15 @@
 package org.hibernate.query.sqm.produce.internal;
 
 import org.hibernate.metamodel.model.domain.spi.EntityValuedNavigable;
+import org.hibernate.metamodel.model.domain.spi.Navigable;
 import org.hibernate.query.sqm.StrictJpaComplianceViolation;
 import org.hibernate.query.sqm.produce.spi.ImplicitAliasGenerator;
 import org.hibernate.query.sqm.produce.spi.SqmCreationContext;
 import org.hibernate.query.sqm.tree.SqmJoinType;
 import org.hibernate.query.sqm.tree.expression.domain.SqmNavigableReference;
 import org.hibernate.query.sqm.tree.expression.domain.SqmSingularAttributeReference;
-import org.hibernate.query.sqm.tree.from.SqmEntityJoin;
-import org.hibernate.query.sqm.tree.from.SqmFromElementSpace;
-import org.hibernate.query.sqm.tree.from.SqmFromExporter;
-import org.hibernate.query.sqm.tree.from.SqmNavigableJoin;
+import org.hibernate.query.sqm.tree.from.*;
+import org.hibernate.sql.ast.produce.metamodel.spi.Joinable;
 
 /**
  * @author Steve Ebersole
@@ -69,13 +68,20 @@ public class SqmFromBuilderFromClauseQualifiedJoin extends AbstractSqmFromBuilde
 			}
 		}
 
-		final SqmNavigableJoin navigableJoin = new SqmNavigableJoin(
+		Navigable navigable = navigableReference.getReferencedNavigable();
+		if ( !( navigable instanceof Joinable<?>) ) {
+			throw new IllegalArgumentException( "Non-joinable navigable reference: " + navigableReference.asLoggableText() );
+		}
+
+		Joinable<?> joinable = (Joinable<?>) navigable;
+		SqmNavigableJoin navigableJoin = (SqmNavigableJoin) joinable.createJoin(
 				navigableReference.getSourceReference().getExportedFromElement(),
 				navigableReference,
 				getSqmCreationContext().generateUniqueIdentifier(),
 				getAlias(),
 				joinType,
-				fetched
+				fetched,
+				getSqmCreationContext()
 		);
 
 		getSqmCreationContext().getCurrentFromElementSpace().addJoin( navigableJoin );

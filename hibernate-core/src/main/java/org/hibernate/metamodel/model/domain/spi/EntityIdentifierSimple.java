@@ -47,7 +47,8 @@ public interface EntityIdentifierSimple<O,J>
 			SqmCreationContext creationContext) {
 		return new SqmEntityIdentifierReferenceSimple(
 				(SqmEntityTypedReference) containerReference,
-				this
+				this,
+				creationContext
 		);
 	}
 

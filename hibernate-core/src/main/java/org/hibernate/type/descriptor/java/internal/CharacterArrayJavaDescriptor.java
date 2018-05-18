@@ -14,12 +14,15 @@ import java.util.Comparator;
 
 import org.hibernate.engine.jdbc.CharacterStream;
 import org.hibernate.engine.jdbc.internal.CharacterStreamImpl;
+import org.hibernate.engine.spi.SessionFactoryImplementor;
+import org.hibernate.query.sqm.tree.expression.SqmLiteral;
 import org.hibernate.type.descriptor.java.spi.AbstractBasicJavaDescriptor;
 import org.hibernate.type.descriptor.java.spi.ArrayMutabilityPlan;
 import org.hibernate.type.descriptor.spi.IncomparableComparator;
 import org.hibernate.type.descriptor.spi.JdbcRecommendedSqlTypeMappingContext;
 import org.hibernate.type.descriptor.spi.WrapperOptions;
 import org.hibernate.type.descriptor.sql.spi.SqlTypeDescriptor;
+import org.hibernate.type.spi.BasicType;
 
 /**
  * Descriptor for {@code Character[]} handling.
@@ -53,6 +56,11 @@ public class CharacterArrayJavaDescriptor extends AbstractBasicJavaDescriptor<Ch
 	@Override
 	public SqlTypeDescriptor getJdbcRecommendedSqlType(JdbcRecommendedSqlTypeMappingContext context) {
 		return StringJavaDescriptor.INSTANCE.getJdbcRecommendedSqlType( context );
+	}
+
+	@Override
+	public SqmLiteral<Character[]> createLiteralExpression(SessionFactoryImplementor sessionFactory, BasicType<Character[]> basicType, Character[] value) {
+		return null;
 	}
 
 	@Override

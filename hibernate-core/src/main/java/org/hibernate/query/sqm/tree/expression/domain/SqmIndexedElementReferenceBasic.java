@@ -6,6 +6,8 @@
  */
 package org.hibernate.query.sqm.tree.expression.domain;
 
+import org.hibernate.query.sqm.produce.spi.SqmCreationContext;
+import org.hibernate.query.sqm.tree.SqmCopyContext;
 import org.hibernate.query.sqm.tree.expression.SqmExpression;
 
 /**
@@ -16,7 +18,17 @@ public class SqmIndexedElementReferenceBasic
 		implements SqmRestrictedCollectionElementReferenceBasic {
 	public SqmIndexedElementReferenceBasic(
 			SqmPluralAttributeReference pluralAttributeBinding,
-			SqmExpression indexSelectionExpression) {
-		super( pluralAttributeBinding, indexSelectionExpression );
+			SqmExpression indexSelectionExpression,
+			SqmCreationContext creationContext) {
+		super( pluralAttributeBinding, indexSelectionExpression, creationContext );
+	}
+
+	@Override
+	public SqmIndexedElementReferenceBasic copy(SqmCopyContext context) {
+		return new SqmIndexedElementReferenceBasic(
+				getPluralAttributeReference().copy( context ),
+				getIndexSelectionExpression().copy( context ),
+				context.getCreationContext()
+		);
 	}
 }

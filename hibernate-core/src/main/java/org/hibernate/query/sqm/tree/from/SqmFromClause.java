@@ -6,6 +6,8 @@
  */
 package org.hibernate.query.sqm.tree.from;
 
+import org.hibernate.query.sqm.tree.SqmCopyContext;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -19,6 +21,23 @@ import java.util.List;
  */
 public class SqmFromClause {
 	private List<SqmFromElementSpace> fromElementSpaces = new ArrayList<SqmFromElementSpace>();
+
+	public SqmFromClause() {
+	}
+
+	private SqmFromClause(List<SqmFromElementSpace> fromElementSpaces) {
+		this.fromElementSpaces = fromElementSpaces;
+	}
+
+	public SqmFromClause copy(SqmCopyContext context) {
+		List<SqmFromElementSpace> spaces = new ArrayList<>( fromElementSpaces.size() );
+		SqmFromClause clause = new SqmFromClause( spaces );
+		for ( SqmFromElementSpace fromElementSpace : fromElementSpaces ) {
+			spaces.add( fromElementSpace.copy( clause, context ) );
+		}
+
+		return clause;
+	}
 
 	public List<SqmFromElementSpace> getFromElementSpaces() {
 		return fromElementSpaces;

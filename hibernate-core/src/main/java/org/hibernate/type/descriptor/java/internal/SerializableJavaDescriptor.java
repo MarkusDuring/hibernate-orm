@@ -16,13 +16,16 @@ import java.sql.Types;
 import org.hibernate.HibernateException;
 import org.hibernate.engine.jdbc.BinaryStream;
 import org.hibernate.engine.jdbc.internal.BinaryStreamImpl;
+import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.internal.util.SerializationHelper;
+import org.hibernate.query.sqm.tree.expression.SqmLiteral;
 import org.hibernate.type.descriptor.java.spi.AbstractBasicJavaDescriptor;
 import org.hibernate.type.descriptor.java.MutabilityPlan;
 import org.hibernate.type.descriptor.java.spi.MutableMutabilityPlan;
 import org.hibernate.type.descriptor.spi.JdbcRecommendedSqlTypeMappingContext;
 import org.hibernate.type.descriptor.spi.WrapperOptions;
 import org.hibernate.type.descriptor.sql.spi.SqlTypeDescriptor;
+import org.hibernate.type.spi.BasicType;
 
 /**
  * Descriptor for general {@link Serializable} handling.
@@ -84,6 +87,11 @@ public class SerializableJavaDescriptor<T extends Serializable> extends Abstract
 	@Override
 	public SqlTypeDescriptor getJdbcRecommendedSqlType(JdbcRecommendedSqlTypeMappingContext context) {
 		return context.getTypeConfiguration().getSqlTypeDescriptorRegistry().getDescriptor( Types.VARBINARY );
+	}
+
+	@Override
+	public SqmLiteral<T> createLiteralExpression(SessionFactoryImplementor sessionFactory, BasicType<T> basicType, T value) {
+		return null;
 	}
 
 	@Override

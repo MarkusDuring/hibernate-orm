@@ -6,14 +6,17 @@
  */
 package org.hibernate.query.sqm.tree.expression;
 
+import org.hibernate.query.sqm.tree.SqmCopyContext;
 import org.hibernate.sql.ast.produce.metamodel.spi.ExpressableType;
+
+import javax.persistence.criteria.ParameterExpression;
 
 /**
  * Models a parameter expression declared in the query.
  *
  * @author Steve Ebersole
  */
-public interface SqmParameter extends ImpliedTypeSqmExpression {
+public interface SqmParameter extends ImpliedTypeSqmExpression, ParameterExpression {
 	/**
 	 * If this represents a named parameter, return that parameter name;
 	 * otherwise return {@code null}.
@@ -53,4 +56,7 @@ public interface SqmParameter extends ImpliedTypeSqmExpression {
 	 * @return The anticipated Type.
 	 */
 	ExpressableType getAnticipatedType();
+
+	@Override
+	SqmParameter copy(SqmCopyContext context);
 }

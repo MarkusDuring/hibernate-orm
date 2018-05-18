@@ -6,8 +6,10 @@
  */
 package org.hibernate.query.sqm.tree.expression.function;
 
+import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.metamodel.model.domain.spi.AllowableFunctionReturnType;
 import org.hibernate.query.sqm.consume.spi.SemanticQueryWalker;
+import org.hibernate.query.sqm.tree.SqmCopyContext;
 import org.hibernate.query.sqm.tree.expression.SqmExpression;
 
 /**
@@ -20,16 +22,18 @@ public class SqmCastFunction extends AbstractSqmFunction implements SqmFunction 
 	private final String explicitSqlCastTarget;
 
 	public SqmCastFunction(
+			SessionFactoryImplementor sessionFactory,
 			SqmExpression expressionToCast,
 			AllowableFunctionReturnType castTargetType) {
-		this( expressionToCast, castTargetType, null );
+		this( sessionFactory, expressionToCast, castTargetType, null );
 	}
 
 	public SqmCastFunction(
+			SessionFactoryImplementor sessionFactory,
 			SqmExpression expressionToCast,
 			AllowableFunctionReturnType castTargetType,
 			String explicitSqlCastTarget) {
-		super( castTargetType );
+		super( sessionFactory, castTargetType );
 		this.expressionToCast = expressionToCast;
 		this.explicitSqlCastTarget = explicitSqlCastTarget;
 	}
@@ -50,6 +54,16 @@ public class SqmCastFunction extends AbstractSqmFunction implements SqmFunction 
 	@Override
 	public boolean hasArguments() {
 		return true;
+	}
+
+	@Override
+	public SqmCastFunction copy(SqmCopyContext context) {
+		return new SqmCastFunction(
+                getSessionFactory(),
+				expressionToCast.copy( context ),
+				getExpressableType(),
+				explicitSqlCastTarget
+		);
 	}
 
 	@Override

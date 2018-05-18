@@ -6,11 +6,13 @@
  */
 package org.hibernate.query.sqm.tree.expression.function;
 
-import java.util.Locale;
-
+import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.metamodel.model.domain.spi.AllowableFunctionReturnType;
 import org.hibernate.query.sqm.consume.spi.SemanticQueryWalker;
+import org.hibernate.query.sqm.tree.SqmCopyContext;
 import org.hibernate.query.sqm.tree.expression.SqmExpression;
+
+import java.util.Locale;
 
 /**
  * @author Steve Ebersole
@@ -22,18 +24,20 @@ public class SqmNullifFunction extends AbstractSqmFunction {
 	private final SqmExpression second;
 
 	public SqmNullifFunction(
+			SessionFactoryImplementor sessionFactory,
 			SqmExpression first,
 			SqmExpression second) {
-		super( (AllowableFunctionReturnType) (first == null ? second.getExpressableType() : first.getExpressableType()) );
+		super( sessionFactory, (AllowableFunctionReturnType) (first == null ? second.getExpressableType() : first.getExpressableType()) );
 		this.first = first;
 		this.second = second;
 	}
 
 	public SqmNullifFunction(
+			SessionFactoryImplementor sessionFactory,
 			SqmExpression first,
 			SqmExpression second,
 			AllowableFunctionReturnType resultType) {
-		super( resultType );
+		super( sessionFactory, resultType );
 		this.first = first;
 		this.second = second;
 	}
@@ -44,6 +48,16 @@ public class SqmNullifFunction extends AbstractSqmFunction {
 
 	public SqmExpression getSecondArgument() {
 		return second;
+	}
+
+	@Override
+	public SqmNullifFunction copy(SqmCopyContext context) {
+		return new SqmNullifFunction(
+                getSessionFactory(),
+				first == null ? null : first.copy( context ),
+				second.copy( context ),
+				getExpressableType()
+		);
 	}
 
 	@Override

@@ -129,7 +129,7 @@ public class CollectionElementEntityImpl<J>
 			SqmFrom sourceSqmFrom,
 			SqmNavigableContainerReference containerReference,
 			SqmCreationContext creationContext) {
-		return new SqmCollectionElementReferenceEntity( (SqmPluralAttributeReference) containerReference );
+		return new SqmCollectionElementReferenceEntity( (SqmPluralAttributeReference) containerReference, creationContext );
 	}
 
 	@Override

@@ -6,7 +6,9 @@
  */
 package org.hibernate.query.sqm.tree.predicate;
 
+import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.query.sqm.consume.spi.SemanticQueryWalker;
+import org.hibernate.query.sqm.tree.SqmCopyContext;
 import org.hibernate.query.sqm.tree.expression.SqmExpression;
 
 /**
@@ -18,24 +20,26 @@ public class LikeSqmPredicate extends AbstractNegatableSqmPredicate {
 	private final SqmExpression escapeCharacter;
 
 	public LikeSqmPredicate(
+			SessionFactoryImplementor sessionFactory,
 			SqmExpression matchExpression,
 			SqmExpression pattern,
 			SqmExpression escapeCharacter) {
-		this( matchExpression, pattern, escapeCharacter, false );
+		this( sessionFactory, matchExpression, pattern, escapeCharacter, false );
 	}
 
 	public LikeSqmPredicate(
+			SessionFactoryImplementor sessionFactory,
 			SqmExpression matchExpression,
 			SqmExpression pattern,
 			SqmExpression escapeCharacter, boolean negated) {
-		super( negated );
+		super( sessionFactory, negated );
 		this.matchExpression = matchExpression;
 		this.pattern = pattern;
 		this.escapeCharacter = escapeCharacter;
 	}
 
-	public LikeSqmPredicate(SqmExpression matchExpression, SqmExpression pattern) {
-		this( matchExpression, pattern, null );
+	public LikeSqmPredicate(SessionFactoryImplementor sessionFactory, SqmExpression matchExpression, SqmExpression pattern) {
+		this( sessionFactory, matchExpression, pattern, null );
 	}
 
 	public SqmExpression getMatchExpression() {
@@ -48,6 +52,28 @@ public class LikeSqmPredicate extends AbstractNegatableSqmPredicate {
 
 	public SqmExpression getEscapeCharacter() {
 		return escapeCharacter;
+	}
+
+	@Override
+	public LikeSqmPredicate copy(SqmCopyContext context) {
+		return new LikeSqmPredicate(
+				sessionFactory,
+				matchExpression.copy( context ),
+				pattern.copy( context ),
+				escapeCharacter.copy( context ),
+				isNegated()
+		);
+	}
+
+	@Override
+	public SqmPredicate not() {
+		return new LikeSqmPredicate(
+				sessionFactory,
+				matchExpression,
+				pattern,
+				escapeCharacter,
+				!isNegated()
+		);
 	}
 
 	@Override

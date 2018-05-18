@@ -8,6 +8,7 @@ package org.hibernate.query.sqm.produce.function.spi;
 
 import java.util.List;
 
+import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.metamodel.model.domain.spi.AllowableFunctionReturnType;
 import org.hibernate.query.sqm.produce.function.SqmFunctionTemplate;
 import org.hibernate.query.sqm.tree.expression.SqmExpression;
@@ -29,9 +30,11 @@ public abstract class AbstractGenericSqmFunctionTemplate implements SqmFunctionT
 
 	@Override
 	public SqmFunction makeSqmFunctionExpression(
+			SessionFactoryImplementor sessionFactory,
 			List<SqmExpression> arguments,
 			AllowableFunctionReturnType impliedResultType) {
 		return new SqmGenericFunction(
+				sessionFactory,
 				name,
 				impliedResultType,
 				arguments

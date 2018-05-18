@@ -7,6 +7,7 @@
 package org.hibernate.query.sqm.tree.select;
 
 import org.hibernate.query.sqm.consume.spi.SemanticQueryWalker;
+import org.hibernate.query.sqm.tree.SqmCopyContext;
 import org.hibernate.query.sqm.tree.SqmTypedNode;
 import org.hibernate.query.sqm.tree.SqmVisitableNode;
 
@@ -17,6 +18,9 @@ import org.hibernate.query.sqm.tree.SqmVisitableNode;
  * @author Steve Ebersole
  */
 public interface SqmSelectableNode extends SqmTypedNode, SqmVisitableNode {
+	@Override
+	SqmSelectableNode copy(SqmCopyContext context);
+
 	/**
 	 * The expectation is that the walking method for SqmSelectableNode
 	 * will return some reference to a

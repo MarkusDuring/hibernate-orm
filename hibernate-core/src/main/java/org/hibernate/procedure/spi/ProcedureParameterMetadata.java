@@ -227,4 +227,14 @@ public class ProcedureParameterMetadata<P extends ProcedureParameterImplementor<
 	public Collection<P> getNamedParameters() {
 		return parameters.stream().filter( p -> p.getPosition() == null ).collect( Collectors.toList() );
 	}
+
+	@Override
+	public boolean hasAnonymousParameters() {
+		return false;
+	}
+
+	@Override
+	public int getAnonymousParameterCount() {
+		return 0;
+	}
 }

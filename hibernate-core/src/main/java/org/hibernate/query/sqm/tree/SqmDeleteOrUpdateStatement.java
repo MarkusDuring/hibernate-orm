@@ -9,9 +9,11 @@ package org.hibernate.query.sqm.tree;
 import org.hibernate.query.sqm.tree.from.SqmRoot;
 import org.hibernate.query.sqm.tree.predicate.SqmWhereClauseContainer;
 
+import javax.persistence.criteria.CommonAbstractCriteria;
+
 /**
  * @author Steve Ebersole
  */
-public interface SqmDeleteOrUpdateStatement extends SqmNonSelectStatement, SqmWhereClauseContainer {
+public interface SqmDeleteOrUpdateStatement extends SqmNonSelectStatement, SqmWhereClauseContainer, CommonAbstractCriteria {
 	SqmRoot getEntityFromElement();
 }

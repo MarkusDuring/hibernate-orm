@@ -6,10 +6,13 @@
  */
 package org.hibernate.type.descriptor.java.internal;
 
+import org.hibernate.engine.spi.SessionFactoryImplementor;
+import org.hibernate.query.sqm.tree.expression.SqmLiteral;
 import org.hibernate.type.descriptor.java.spi.AbstractBasicJavaDescriptor;
 import org.hibernate.type.descriptor.spi.JdbcRecommendedSqlTypeMappingContext;
 import org.hibernate.type.descriptor.spi.WrapperOptions;
 import org.hibernate.type.descriptor.sql.spi.SqlTypeDescriptor;
+import org.hibernate.type.spi.BasicType;
 
 /**
  * @author Steve Ebersole
@@ -23,6 +26,11 @@ public class NonStandardBasicJavaTypeDescriptor<T>
 	@Override
 	public SqlTypeDescriptor getJdbcRecommendedSqlType(JdbcRecommendedSqlTypeMappingContext context) {
 		// none
+		return null;
+	}
+
+	@Override
+	public SqmLiteral<T> createLiteralExpression(SessionFactoryImplementor sessionFactory, BasicType<T> basicType, T value) {
 		return null;
 	}
 

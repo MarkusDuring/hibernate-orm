@@ -18,6 +18,8 @@ import java.util.Date;
 import java.util.GregorianCalendar;
 import javax.persistence.TemporalType;
 
+import org.hibernate.engine.spi.SessionFactoryImplementor;
+import org.hibernate.query.sqm.tree.expression.SqmLiteral;
 import org.hibernate.type.descriptor.java.spi.AbstractBasicJavaDescriptor;
 import org.hibernate.type.descriptor.java.spi.ImmutableMutabilityPlan;
 import org.hibernate.type.descriptor.java.spi.TemporalJavaDescriptor;
@@ -25,6 +27,7 @@ import org.hibernate.type.descriptor.spi.JdbcRecommendedSqlTypeMappingContext;
 import org.hibernate.type.descriptor.spi.WrapperOptions;
 import org.hibernate.type.descriptor.sql.spi.SqlTypeDescriptor;
 import org.hibernate.metamodel.model.domain.spi.OffsetDateTimeVersionSupport;
+import org.hibernate.type.spi.BasicType;
 import org.hibernate.type.spi.TypeConfiguration;
 import org.hibernate.metamodel.model.domain.spi.VersionSupport;
 
@@ -53,6 +56,11 @@ public class OffsetDateTimeJavaDescriptor
 	@Override
 	public SqlTypeDescriptor getJdbcRecommendedSqlType(JdbcRecommendedSqlTypeMappingContext context) {
 		return context.getTypeConfiguration().getSqlTypeDescriptorRegistry().getDescriptor( Types.TIMESTAMP );
+	}
+
+	@Override
+	public SqmLiteral<OffsetDateTime> createLiteralExpression(SessionFactoryImplementor sessionFactory, BasicType<OffsetDateTime> basicType, OffsetDateTime value) {
+		return null;
 	}
 
 	@Override

@@ -86,7 +86,7 @@ public class CollectionIndexEmbeddedImpl<J>
 			SqmFrom sourceSqmFrom,
 			SqmNavigableContainerReference containerReference,
 			SqmCreationContext creationContext) {
-		return new SqmCollectionIndexReferenceEmbedded( (SqmPluralAttributeReference) containerReference );
+		return new SqmCollectionIndexReferenceEmbedded( (SqmPluralAttributeReference) containerReference, creationContext );
 	}
 
 	@Override

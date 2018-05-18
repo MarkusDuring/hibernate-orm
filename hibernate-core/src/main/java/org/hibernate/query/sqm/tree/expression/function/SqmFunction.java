@@ -7,6 +7,7 @@
 package org.hibernate.query.sqm.tree.expression.function;
 
 import org.hibernate.metamodel.model.domain.spi.AllowableFunctionReturnType;
+import org.hibernate.query.sqm.tree.SqmCopyContext;
 import org.hibernate.query.sqm.tree.expression.SqmExpression;
 
 /**
@@ -19,4 +20,7 @@ public interface SqmFunction extends SqmExpression {
 	AllowableFunctionReturnType getExpressableType();
 
 	boolean hasArguments();
+
+	@Override
+	SqmFunction copy(SqmCopyContext context);
 }

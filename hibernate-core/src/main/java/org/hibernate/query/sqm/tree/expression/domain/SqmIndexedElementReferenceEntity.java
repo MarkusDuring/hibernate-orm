@@ -8,6 +8,8 @@ package org.hibernate.query.sqm.tree.expression.domain;
 
 import org.hibernate.metamodel.model.domain.spi.CollectionElementEntity;
 import org.hibernate.metamodel.model.domain.spi.EntityDescriptor;
+import org.hibernate.query.sqm.produce.spi.SqmCreationContext;
+import org.hibernate.query.sqm.tree.SqmCopyContext;
 import org.hibernate.query.sqm.tree.expression.SqmExpression;
 import org.hibernate.query.sqm.tree.from.SqmFrom;
 
@@ -21,8 +23,18 @@ public class SqmIndexedElementReferenceEntity
 
 	public SqmIndexedElementReferenceEntity(
 			SqmPluralAttributeReference pluralAttributeBinding,
-			SqmExpression indexSelectionExpression) {
-		super( pluralAttributeBinding, indexSelectionExpression );
+			SqmExpression indexSelectionExpression,
+			SqmCreationContext creationContext) {
+		super( pluralAttributeBinding, indexSelectionExpression, creationContext );
+	}
+
+	@Override
+	public SqmIndexedElementReferenceEntity copy(SqmCopyContext context) {
+		return new SqmIndexedElementReferenceEntity(
+				getPluralAttributeReference().copy( context ),
+				getIndexSelectionExpression().copy( context ),
+				context.getCreationContext()
+		);
 	}
 
 	@Override
@@ -56,4 +68,5 @@ public class SqmIndexedElementReferenceEntity
 		// todo (6.0) : for the entity index classification we should point to the referenced entity's uid
 		return super.getUniqueIdentifier();
 	}
+
 }

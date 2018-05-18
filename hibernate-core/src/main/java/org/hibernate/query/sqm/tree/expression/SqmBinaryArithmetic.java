@@ -6,14 +6,16 @@
  */
 package org.hibernate.query.sqm.tree.expression;
 
+import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.query.sqm.consume.spi.SemanticQueryWalker;
+import org.hibernate.query.sqm.tree.SqmCopyContext;
 import org.hibernate.sql.ast.produce.metamodel.spi.ExpressableType;
 import org.hibernate.type.descriptor.java.spi.JavaTypeDescriptor;
 
 /**
  * @author Steve Ebersole
  */
-public class SqmBinaryArithmetic implements SqmExpression {
+public class SqmBinaryArithmetic extends AbstractSqmExpression implements SqmExpression {
 	private final Operation operation;
 	private final SqmExpression lhsOperand;
 	private final SqmExpression rhsOperand;
@@ -21,10 +23,12 @@ public class SqmBinaryArithmetic implements SqmExpression {
 	private ExpressableType expressionType;
 
 	public SqmBinaryArithmetic(
+			SessionFactoryImplementor sessionFactory,
 			Operation operation,
 			SqmExpression lhsOperand,
 			SqmExpression rhsOperand,
 			ExpressableType expressionType) {
+		super( sessionFactory );
 		this.operation = operation;
 		this.lhsOperand = lhsOperand;
 		this.rhsOperand = rhsOperand;
@@ -34,6 +38,17 @@ public class SqmBinaryArithmetic implements SqmExpression {
 	@Override
 	public JavaTypeDescriptor getJavaTypeDescriptor() {
 		return expressionType.getJavaTypeDescriptor();
+	}
+
+	@Override
+	public SqmBinaryArithmetic copy(SqmCopyContext context) {
+		return new SqmBinaryArithmetic(
+                getSessionFactory(),
+				operation,
+				lhsOperand.copy( context ),
+				rhsOperand.copy( context ),
+				expressionType
+		);
 	}
 
 	@Override

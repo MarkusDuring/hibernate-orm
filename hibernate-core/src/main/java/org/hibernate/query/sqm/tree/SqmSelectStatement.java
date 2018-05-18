@@ -11,4 +11,10 @@ package org.hibernate.query.sqm.tree;
  */
 public interface SqmSelectStatement extends SqmStatement {
 	SqmQuerySpec getQuerySpec();
+
+	@Override
+	SqmSelectStatement copy();
+
+	@Override
+	SqmSelectStatement copy(SqmCopyContext context);
 }

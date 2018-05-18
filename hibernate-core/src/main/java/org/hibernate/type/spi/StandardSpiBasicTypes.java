@@ -49,6 +49,8 @@ import org.hibernate.type.descriptor.java.internal.DurationJavaDescriptor;
 import org.hibernate.type.descriptor.java.internal.FloatJavaDescriptor;
 import org.hibernate.type.descriptor.java.internal.InstantJavaDescriptor;
 import org.hibernate.type.descriptor.java.internal.IntegerJavaDescriptor;
+import org.hibernate.type.descriptor.java.internal.JdbcDateJavaDescriptor;
+import org.hibernate.type.descriptor.java.internal.JdbcTimeJavaDescriptor;
 import org.hibernate.type.descriptor.java.internal.LocalDateJavaDescriptor;
 import org.hibernate.type.descriptor.java.internal.LocalDateTimeJavaDescriptor;
 import org.hibernate.type.descriptor.java.internal.LocalTimeJavaDescriptor;
@@ -499,7 +501,7 @@ public final class StandardSpiBasicTypes {
 	 * {@link java.sql.Types#TIME TIME}.
 	 */
 	public static final BasicType<Date> TIME = new BasicTypeImpl(
-			DateJavaDescriptor.INSTANCE,
+			JdbcTimeJavaDescriptor.INSTANCE,
 			TimeSqlDescriptor.INSTANCE
 	);
 
@@ -508,7 +510,7 @@ public final class StandardSpiBasicTypes {
 	 * {@link java.sql.Types#DATE DATE}.
 	 */
 	public static final BasicType<Date> DATE = new BasicTypeImpl(
-			DateJavaDescriptor.INSTANCE,
+			JdbcDateJavaDescriptor.INSTANCE,
 			DateSqlDescriptor.INSTANCE
 	);
 

@@ -98,6 +98,7 @@ public class QuerySqmImpl<R>
 	private static ParameterMetadataImpl buildParameterMetadata(SqmStatement sqm) {
 		Map<String, QueryParameterImplementor<?>> namedQueryParameters = null;
 		Map<Integer, QueryParameterImplementor<?>> positionalQueryParameters = null;
+		Map<SqmParameter, QueryParameterImplementor<?>> anonymousQueryParameters = null;
 
 		for ( SqmParameter parameter : sqm.getQueryParameters() ) {
 			if ( parameter.getName() != null ) {
@@ -118,9 +119,18 @@ public class QuerySqmImpl<R>
 						QueryParameterPositionalImpl.fromSqm( parameter )
 				);
 			}
+			else {
+				if ( anonymousQueryParameters == null ) {
+					anonymousQueryParameters = new HashMap<>();
+				}
+				anonymousQueryParameters.put(
+						parameter,
+						(QueryParameterImplementor<?>) parameter
+				);
+			}
 		}
 
-		return new ParameterMetadataImpl( positionalQueryParameters, namedQueryParameters );
+		return new ParameterMetadataImpl( positionalQueryParameters, namedQueryParameters, anonymousQueryParameters );
 	}
 
 	@Override
@@ -206,7 +216,7 @@ public class QuerySqmImpl<R>
 		}
 
 		if ( cls.isInstance( sqmStatement ) ) {
-			return (T) sqmStatement;
+			return (T) sqmStatement.copy();
 		}
 
 		if ( cls.isInstance( queryOptions ) ) {

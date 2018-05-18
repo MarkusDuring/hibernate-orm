@@ -11,6 +11,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.metamodel.model.domain.spi.AllowableFunctionReturnType;
 import org.hibernate.query.sqm.produce.function.SqmFunctionTemplate;
 import org.hibernate.query.sqm.tree.expression.SqmExpression;
@@ -54,10 +55,13 @@ public class DB2SubstringFunctionTemplate implements SqmFunctionTemplate {
 
 	@Override
 	public SqmExpression makeSqmFunctionExpression(
+			SessionFactoryImplementor sessionFactory,
 			List<SqmExpression> arguments, AllowableFunctionReturnType impliedResultType) {
 		return new DB2SubstringFunction(
+				sessionFactory,
 				getRenderedName( arguments ),
-				StandardSpiBasicTypes.STRING, arguments.get( 1 ),
+				sessionFactory.getTypeConfiguration().getBasicTypeRegistry().getBasicType( String.class ),
+				arguments.get( 1 ),
 				arguments.get( 2 ),
 				null
 		);
@@ -68,10 +72,11 @@ public class DB2SubstringFunctionTemplate implements SqmFunctionTemplate {
 		String functionName;
 
 		public DB2SubstringFunction(
+				SessionFactoryImplementor sessionFactory,
 				String functionName,
 				BasicValuedExpressableType resultType,
 				SqmExpression source, SqmExpression startPosition, SqmExpression length) {
-			super( resultType, source, startPosition, length );
+			super( sessionFactory, resultType, source, startPosition, length );
 			this.functionName = functionName;
 		}
 

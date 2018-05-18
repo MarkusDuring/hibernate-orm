@@ -6,15 +6,22 @@
  */
 package org.hibernate.query.sqm.tree.expression;
 
-import org.hibernate.sql.ast.produce.metamodel.spi.BasicValuedExpressableType;
+import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.query.sqm.consume.spi.SemanticQueryWalker;
+import org.hibernate.query.sqm.tree.SqmCopyContext;
+import org.hibernate.sql.ast.produce.metamodel.spi.BasicValuedExpressableType;
 
 /**
  * @author Steve Ebersole
  */
 public class SqmLiteralTrue extends AbstractSqmLiteral<Boolean> {
-	public SqmLiteralTrue(BasicValuedExpressableType expressionType) {
-		super( Boolean.TRUE, expressionType );
+	public SqmLiteralTrue(SessionFactoryImplementor sessionFactory, BasicValuedExpressableType expressionType) {
+		super( sessionFactory, Boolean.TRUE, expressionType );
+	}
+
+	@Override
+	public SqmLiteralTrue copy(SqmCopyContext context) {
+		return this;
 	}
 
 	@Override

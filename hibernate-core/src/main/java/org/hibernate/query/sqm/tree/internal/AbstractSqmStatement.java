@@ -10,20 +10,82 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.HashMap;
 
-import org.hibernate.query.sqm.tree.expression.SqmParameter;
+import org.hibernate.engine.spi.SessionFactoryImplementor;
+import org.hibernate.metamodel.model.domain.spi.EntityValuedNavigable;
+import org.hibernate.query.criteria.HibernateCriteriaBuilder;
+import org.hibernate.query.criteria.internal.CriteriaQueryCreationContext;
+import org.hibernate.query.sqm.produce.internal.SqmCriteriaCopyContext;
+import org.hibernate.query.sqm.produce.internal.SqmFromBuilderFromClauseStandard;
+import org.hibernate.query.sqm.produce.spi.SqmCreationContext;
+import org.hibernate.query.sqm.tree.SqmQuerySpec;
+import org.hibernate.query.sqm.tree.expression.*;
 import org.hibernate.query.sqm.tree.SqmStatement;
-import org.hibernate.query.sqm.tree.expression.SqmNamedParameter;
-import org.hibernate.query.sqm.tree.expression.SqmPositionalParameter;
 import org.hibernate.query.sqm.SemanticException;
+import org.hibernate.query.sqm.tree.from.SqmFromClause;
+import org.hibernate.query.sqm.tree.from.SqmFromElementSpace;
+import org.hibernate.query.sqm.tree.from.SqmRoot;
+import org.hibernate.query.sqm.tree.group.SqmGroupByClause;
+import org.hibernate.query.sqm.tree.order.SqmOrderByClause;
+import org.hibernate.query.sqm.tree.paging.SqmLimitOffsetClause;
+import org.hibernate.query.sqm.tree.predicate.SqmHavingClause;
+import org.hibernate.query.sqm.tree.predicate.SqmWhereClause;
+import org.hibernate.query.sqm.tree.select.SqmSelectClause;
+import org.hibernate.sql.ast.produce.metamodel.spi.ExpressableType;
+import org.hibernate.type.spi.TypeConfiguration;
+
+import javax.persistence.criteria.CommonAbstractCriteria;
+import javax.persistence.criteria.Subquery;
 
 /**
  * @author Steve Ebersole
  */
-public abstract class AbstractSqmStatement implements SqmStatement, ParameterCollector {
+public abstract class AbstractSqmStatement implements SqmStatement, ParameterCollector, CommonAbstractCriteria {
+	private final SqmCreationContext creationContext;
 	private Map<String,SqmNamedParameter> namedQueryParameters;
 	private Map<Integer,SqmPositionalParameter> positionalQueryParameters;
+	private Map<SqmAnonymousParameter,SqmAnonymousParameter> anonymousQueryParameters;
+
+	public AbstractSqmStatement(SqmCreationContext creationContext) {
+		this.creationContext = creationContext;
+		creationContext.setCurrentContainingQuery( this );
+	}
+
+	protected SessionFactoryImplementor getSessionFactory() {
+		return creationContext.getSessionFactory();
+	}
+
+	protected HibernateCriteriaBuilder criteriaBuilder() {
+		return creationContext.getSessionFactory().getCriteriaBuilder();
+	}
+
+	protected final SqmRoot createRoot(SqmFromClause fromClause, Class<?> entityClass) {
+		EntityValuedNavigable<?> entityReference = (EntityValuedNavigable<?>) creationContext.getSessionFactory()
+				.getMetamodel()
+				.resolveEntityReference( entityClass );
+		SqmFromElementSpace oldSpace = creationContext.getCurrentFromElementSpace();
+
+		try {
+			SqmFromElementSpace fromElementSpace = fromClause == null ? null : fromClause.makeFromElementSpace();
+			creationContext.getCurrentSqmFromElementSpaceCoordAccess().setCurrentSqmFromElementSpace( fromElementSpace );
+			SqmFromBuilderFromClauseStandard fromBuilder = new SqmFromBuilderFromClauseStandard(
+					creationContext.getImplicitAliasGenerator().generateUniqueImplicitAlias(),
+					creationContext
+			);
+			return fromBuilder.buildRoot( entityReference );
+		} finally {
+			creationContext.getCurrentSqmFromElementSpaceCoordAccess().setCurrentSqmFromElementSpace( oldSpace );
+		}
+	}
+
+	@Override
+	public SqmStatement copy() {
+		SqmCreationContext creationContext = CriteriaQueryCreationContext.forDml( getSessionFactory() );
+		SqmStatement statement = copy( new SqmCriteriaCopyContext( creationContext ) );
+		statement.wrapUp();
+		return statement;
+	}
 
 	@Override
 	public void addParameter(SqmNamedParameter parameter) {
@@ -31,7 +93,7 @@ public abstract class AbstractSqmStatement implements SqmStatement, ParameterCol
 		assert parameter.getPosition() == null;
 
 		if ( namedQueryParameters == null ) {
-			namedQueryParameters = new ConcurrentHashMap<>();
+			namedQueryParameters = new HashMap<>();
 		}
 
 		namedQueryParameters.put( parameter.getName(), parameter );
@@ -43,12 +105,25 @@ public abstract class AbstractSqmStatement implements SqmStatement, ParameterCol
 		assert parameter.getName() == null;
 
 		if ( positionalQueryParameters == null ) {
-			positionalQueryParameters = new ConcurrentHashMap<>();
+			positionalQueryParameters = new HashMap<>();
 		}
 
 		positionalQueryParameters.put( parameter.getPosition(), parameter );
 	}
 
+	@Override
+	public void addParameter(SqmAnonymousParameter parameter) {
+		assert parameter.getPosition() == null;
+		assert parameter.getName() == null;
+
+		if ( anonymousQueryParameters == null ) {
+			anonymousQueryParameters = new HashMap<>();
+		}
+
+		anonymousQueryParameters.put( parameter, parameter );
+	}
+
+	@Override
 	public void wrapUp() {
 		validateParameters();
 	}
@@ -86,6 +161,33 @@ public abstract class AbstractSqmStatement implements SqmStatement, ParameterCol
 		if ( positionalQueryParameters != null ) {
 			parameters.addAll( positionalQueryParameters.values() );
 		}
+		if ( anonymousQueryParameters != null ) {
+			parameters.addAll( anonymousQueryParameters.values() );
+		}
 		return parameters;
+	}
+
+	@Override
+	public <U> Subquery<U> subquery(Class<U> type) {
+		SessionFactoryImplementor sessionFactory = getSessionFactory();
+		ExpressableType expressableType = sessionFactory.getMetamodel().findEntityDescriptor( type );
+		if ( expressableType == null ) {
+			expressableType = sessionFactory.getTypeConfiguration().getBasicTypeRegistry().getBasicType( type );
+		}
+
+		return new SqmSubQuery(
+				creationContext,
+				this,
+				new SqmQuerySpec(
+						new SqmFromClause(),
+						new SqmSelectClause(false, type),
+						new SqmWhereClause(),
+						new SqmGroupByClause(),
+						new SqmHavingClause(),
+						new SqmOrderByClause(),
+						new SqmLimitOffsetClause()
+				),
+				expressableType
+		);
 	}
 }

@@ -9,6 +9,8 @@ package org.hibernate.query.sqm.tree.expression.domain;
 import org.hibernate.metamodel.model.domain.spi.CollectionElementEntity;
 import org.hibernate.query.sqm.NotYetImplementedException;
 import org.hibernate.query.sqm.consume.spi.SemanticQueryWalker;
+import org.hibernate.query.sqm.produce.spi.SqmCreationContext;
+import org.hibernate.query.sqm.tree.SqmCopyContext;
 import org.hibernate.query.sqm.tree.from.SqmFrom;
 
 /**
@@ -19,8 +21,16 @@ public class SqmMaxElementReferenceEntity
 		implements SqmRestrictedCollectionElementReferenceEntity, SqmMaxElementReference {
 	private SqmFrom exportedFromElement;
 
-	public SqmMaxElementReferenceEntity(SqmPluralAttributeReference pluralAttributeBinding) {
-		super( pluralAttributeBinding );
+	public SqmMaxElementReferenceEntity(SqmPluralAttributeReference pluralAttributeBinding, SqmCreationContext creationContext) {
+		super( pluralAttributeBinding, creationContext );
+	}
+
+	@Override
+	public SqmMaxElementReferenceEntity copy(SqmCopyContext context) {
+		return new SqmMaxElementReferenceEntity(
+				getPluralAttributeReference().copy( context ),
+				context.getCreationContext()
+		);
 	}
 
 	@Override
@@ -47,4 +57,5 @@ public class SqmMaxElementReferenceEntity
 	public <T> T accept(SemanticQueryWalker<T> walker) {
 		throw new NotYetImplementedException(  );
 	}
+
 }

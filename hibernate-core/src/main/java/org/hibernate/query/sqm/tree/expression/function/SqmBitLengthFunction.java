@@ -8,8 +8,10 @@ package org.hibernate.query.sqm.tree.expression.function;
 
 import java.util.Locale;
 
+import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.metamodel.model.domain.spi.AllowableFunctionReturnType;
 import org.hibernate.query.sqm.consume.spi.SemanticQueryWalker;
+import org.hibernate.query.sqm.tree.SqmCopyContext;
 import org.hibernate.query.sqm.tree.expression.SqmExpression;
 
 /**
@@ -20,14 +22,15 @@ public class SqmBitLengthFunction extends AbstractSqmFunction {
 
 	private final SqmExpression argument;
 
-	public SqmBitLengthFunction(SqmExpression argument) {
-		this( argument, (AllowableFunctionReturnType) argument.getExpressableType() );
+	public SqmBitLengthFunction(SessionFactoryImplementor sessionFactory, SqmExpression argument) {
+		this( sessionFactory, argument, (AllowableFunctionReturnType) argument.getExpressableType() );
 	}
 
-	public SqmBitLengthFunction(
+	private SqmBitLengthFunction(
+			SessionFactoryImplementor sessionFactory,
 			SqmExpression argument,
 			AllowableFunctionReturnType resultType) {
-		super( resultType );
+		super( sessionFactory, resultType );
 		this.argument = argument;
 	}
 
@@ -43,6 +46,15 @@ public class SqmBitLengthFunction extends AbstractSqmFunction {
 	@Override
 	public boolean hasArguments() {
 		return true;
+	}
+
+	@Override
+	public SqmBitLengthFunction copy(SqmCopyContext context) {
+		return new SqmBitLengthFunction(
+				getSessionFactory(),
+				argument.copy( context ),
+				getExpressableType()
+		);
 	}
 
 	@Override

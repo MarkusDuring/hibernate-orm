@@ -8,8 +8,10 @@ package org.hibernate.query.sqm.tree.expression.function;
 
 import java.util.Locale;
 
+import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.metamodel.model.domain.spi.AllowableFunctionReturnType;
 import org.hibernate.query.sqm.consume.spi.SemanticQueryWalker;
+import org.hibernate.query.sqm.tree.SqmCopyContext;
 import org.hibernate.query.sqm.tree.expression.SqmExpression;
 
 /**
@@ -25,11 +27,12 @@ public class SqmLocateFunction extends AbstractSqmFunction {
 	private final SqmExpression startPosition;
 
 	public SqmLocateFunction(
+			SessionFactoryImplementor sessionFactory,
 			SqmExpression patternString,
 			SqmExpression stringToSearch,
 			SqmExpression startPosition,
 			AllowableFunctionReturnType resultType) {
-		super( resultType );
+		super( sessionFactory, resultType );
 		this.patternString = patternString;
 		this.stringToSearch = stringToSearch;
 		this.startPosition = startPosition;
@@ -58,6 +61,17 @@ public class SqmLocateFunction extends AbstractSqmFunction {
 	@Override
 	public boolean hasArguments() {
 		return true;
+	}
+
+	@Override
+	public SqmLocateFunction copy(SqmCopyContext context) {
+		return new SqmLocateFunction(
+                getSessionFactory(),
+				patternString.copy( context ),
+				stringToSearch.copy( context ),
+				startPosition == null ? null : startPosition.copy( context ),
+				getExpressableType()
+		);
 	}
 
 	@Override

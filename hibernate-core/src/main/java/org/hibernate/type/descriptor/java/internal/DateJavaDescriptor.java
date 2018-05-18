@@ -15,6 +15,9 @@ import java.util.GregorianCalendar;
 
 import javax.persistence.TemporalType;
 
+import org.hibernate.engine.spi.SessionFactoryImplementor;
+import org.hibernate.query.sqm.tree.expression.SqmLiteral;
+import org.hibernate.query.sqm.tree.expression.SqmLiteralTimestamp;
 import org.hibernate.type.descriptor.java.spi.AbstractBasicJavaDescriptor;
 import org.hibernate.type.descriptor.java.spi.MutableMutabilityPlan;
 import org.hibernate.type.descriptor.java.spi.TemporalJavaDescriptor;
@@ -22,6 +25,7 @@ import org.hibernate.type.descriptor.spi.JdbcRecommendedSqlTypeMappingContext;
 import org.hibernate.type.descriptor.spi.WrapperOptions;
 import org.hibernate.type.descriptor.sql.spi.SqlTypeDescriptor;
 import org.hibernate.metamodel.model.domain.spi.TimestampVersionSupport;
+import org.hibernate.type.spi.BasicType;
 import org.hibernate.type.spi.TypeConfiguration;
 import org.hibernate.metamodel.model.domain.spi.VersionSupport;
 
@@ -65,6 +69,11 @@ public class DateJavaDescriptor
 
 	public DateJavaDescriptor() {
 		super( Date.class, DateMutabilityPlan.INSTANCE );
+	}
+
+	@Override
+	public SqmLiteral<Date> createLiteralExpression(SessionFactoryImplementor sessionFactory, BasicType<Date> basicType, Date value) {
+		return new SqmLiteralTimestamp( sessionFactory, value, basicType );
 	}
 
 	@Override

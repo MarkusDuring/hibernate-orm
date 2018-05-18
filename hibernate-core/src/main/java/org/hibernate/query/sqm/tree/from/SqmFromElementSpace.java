@@ -10,6 +10,9 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import org.hibernate.query.sqm.produce.internal.SqmFromBuilderFromClauseQualifiedJoin;
+import org.hibernate.query.sqm.produce.spi.SqmFromBuilder;
+import org.hibernate.query.sqm.tree.SqmCopyContext;
 import org.jboss.logging.Logger;
 
 /**
@@ -31,6 +34,44 @@ public class SqmFromElementSpace {
 
 	public SqmFromElementSpace(SqmFromClause fromClause) {
 		this.fromClause = fromClause;
+	}
+
+	public SqmFromElementSpace copy(SqmFromClause fromClause, SqmCopyContext context) {
+		return context.copy( this, () -> {
+			final SqmFromBuilder oldFromBuilder = context.getCreationContext().getCurrentFromElementBuilder();
+			final SqmFromElementSpace oldElementSpace = context.getCreationContext().getCurrentFromElementSpace();
+			try {
+				final SqmFromElementSpace fromElementSpace = new SqmFromElementSpace( fromClause );
+				context.getCreationContext().getCurrentSqmFromElementSpaceCoordAccess()
+						.setCurrentSqmFromElementSpace( fromElementSpace );
+
+				fromElementSpace.setRoot( root == null ? null : root.copy( context ) );
+
+				if ( joins != null ) {
+					List<SqmJoin> newJoins = new ArrayList<>( joins.size() );
+					for ( SqmJoin join : joins ) {
+						final SqmFromBuilder fromBuilder = new SqmFromBuilderFromClauseQualifiedJoin(
+								join.getSqmJoinType(),
+								join instanceof SqmNavigableJoin && ((SqmNavigableJoin) join).isFetched(),
+								join.getIdentificationVariable(),
+								context.getCreationContext()
+						);
+						context.getCreationContext().setCurrentFromElementBuilder( fromBuilder );
+						newJoins.add( context.copy(
+								join,
+								() -> join.copy( context )
+						));
+					}
+
+					fromElementSpace.joins = newJoins;
+				}
+				return fromElementSpace;
+			} finally {
+				context.getCreationContext().getCurrentSqmFromElementSpaceCoordAccess()
+						.setCurrentSqmFromElementSpace( oldElementSpace );
+				context.getCreationContext().setCurrentFromElementBuilder( oldFromBuilder );
+			}
+		});
 	}
 
 	public SqmFromClause getFromClause() {

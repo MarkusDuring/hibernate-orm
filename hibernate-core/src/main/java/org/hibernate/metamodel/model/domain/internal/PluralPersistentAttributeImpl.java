@@ -26,9 +26,16 @@ import org.hibernate.metamodel.model.domain.spi.PluralPersistentAttribute;
 import org.hibernate.metamodel.model.relational.spi.ForeignKey;
 import org.hibernate.property.access.spi.PropertyAccess;
 import org.hibernate.query.sqm.produce.spi.SqmCreationContext;
+import org.hibernate.query.sqm.tree.SqmJoinType;
 import org.hibernate.query.sqm.tree.expression.domain.SqmNavigableContainerReference;
+import org.hibernate.query.sqm.tree.expression.domain.SqmNavigableReference;
 import org.hibernate.query.sqm.tree.expression.domain.SqmPluralAttributeReference;
 import org.hibernate.query.sqm.tree.from.SqmFrom;
+import org.hibernate.query.sqm.tree.from.SqmPluralNavigableJoin;
+import org.hibernate.query.sqm.tree.from.SqmListNavigableJoin;
+import org.hibernate.query.sqm.tree.from.SqmCollectionNavigableJoin;
+import org.hibernate.query.sqm.tree.from.SqmSetNavigableJoin;
+import org.hibernate.query.sqm.tree.from.SqmMapNavigableJoin;
 import org.hibernate.sql.ast.produce.spi.ColumnReferenceQualifier;
 import org.hibernate.sql.ast.tree.spi.expression.Expression;
 import org.hibernate.sql.results.internal.AggregateSqlSelectionGroupNode;
@@ -58,6 +65,61 @@ public class PluralPersistentAttributeImpl implements PluralPersistentAttribute 
 		this.collectionDescriptor = collectionDescriptor;
 
 		creationContext.registerCollectionDescriptor( collectionDescriptor, bootCollectionDescriptor );
+	}
+
+	@Override
+	public SqmPluralNavigableJoin createJoin(
+			SqmFrom lhs,
+			SqmNavigableReference navigableReference,
+			String uniqueIdentifier,
+			String alias,
+			SqmJoinType joinType,
+			boolean fetched,
+			SqmCreationContext sqmCreationContext) {
+		switch ( getCollectionType() ) {
+			case SET:
+				return new SqmSetNavigableJoin(
+						lhs,
+						navigableReference,
+						uniqueIdentifier,
+						alias,
+						joinType,
+						fetched,
+						sqmCreationContext
+				);
+			case LIST:
+				return new SqmListNavigableJoin(
+						lhs,
+						navigableReference,
+						uniqueIdentifier,
+						alias,
+						joinType,
+						fetched,
+						sqmCreationContext
+				);
+			case MAP:
+				return new SqmMapNavigableJoin(
+						lhs,
+						navigableReference,
+						uniqueIdentifier,
+						alias,
+						joinType,
+						fetched,
+						sqmCreationContext
+				);
+			case COLLECTION:
+				return new SqmCollectionNavigableJoin(
+						lhs,
+						navigableReference,
+						sqmCreationContext.generateUniqueIdentifier(),
+						alias,
+						joinType,
+						fetched,
+						sqmCreationContext
+				);
+		}
+
+		throw new UnsupportedOperationException( "unsupported collection type: " + getCollectionType() );
 	}
 
 	@Override

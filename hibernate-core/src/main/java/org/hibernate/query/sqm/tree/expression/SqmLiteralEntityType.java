@@ -6,10 +6,11 @@
  */
 package org.hibernate.query.sqm.tree.expression;
 
+import org.hibernate.engine.spi.SessionFactoryImplementor;
+import org.hibernate.query.sqm.tree.SqmCopyContext;
 import org.hibernate.query.sqm.tree.TreeException;
 import org.hibernate.sql.ast.produce.metamodel.spi.EntityValuedExpressableType;
 import org.hibernate.query.sqm.consume.spi.SemanticQueryWalker;
-import org.hibernate.sql.ast.tree.spi.expression.Expression;
 import org.hibernate.sql.results.spi.QueryResult;
 import org.hibernate.sql.results.spi.QueryResultCreationContext;
 import org.hibernate.sql.results.spi.QueryResultProducer;
@@ -24,10 +25,11 @@ import org.hibernate.type.descriptor.java.spi.JavaTypeDescriptor;
  *
  * @author Steve Ebersole
  */
-public class SqmLiteralEntityType implements SqmExpression, QueryResultProducer {
+public class SqmLiteralEntityType extends AbstractSqmExpression implements SqmExpression, QueryResultProducer {
 	private final EntityValuedExpressableType entityType;
 
-	public SqmLiteralEntityType(EntityValuedExpressableType entityType) {
+	public SqmLiteralEntityType(SessionFactoryImplementor sessionFactory, EntityValuedExpressableType entityType) {
+		super( sessionFactory );
 		this.entityType = entityType;
 	}
 
@@ -44,6 +46,11 @@ public class SqmLiteralEntityType implements SqmExpression, QueryResultProducer 
 	@Override
 	public EntityValuedExpressableType getInferableType() {
 		return getExpressableType();
+	}
+
+	@Override
+	public SqmLiteralEntityType copy(SqmCopyContext context) {
+		return this;
 	}
 
 	@Override

@@ -8,6 +8,8 @@ package org.hibernate.query.sqm.tree.expression.domain;
 
 import org.hibernate.metamodel.model.domain.spi.BasicCollectionElement;
 import org.hibernate.query.sqm.consume.spi.SemanticQueryWalker;
+import org.hibernate.query.sqm.produce.spi.SqmCreationContext;
+import org.hibernate.query.sqm.tree.SqmCopyContext;
 
 /**
  * @author Steve Ebersole
@@ -15,8 +17,16 @@ import org.hibernate.query.sqm.consume.spi.SemanticQueryWalker;
 public class SqmMaxElementReferenceBasic
 		extends AbstractSpecificSqmElementReference
 		implements SqmRestrictedCollectionElementReferenceBasic, SqmMaxElementReference {
-	public SqmMaxElementReferenceBasic(SqmPluralAttributeReference pluralAttributeBinding) {
-		super( pluralAttributeBinding );
+	public SqmMaxElementReferenceBasic(SqmPluralAttributeReference pluralAttributeBinding, SqmCreationContext creationContext) {
+		super( pluralAttributeBinding, creationContext );
+	}
+
+	@Override
+	public SqmMaxElementReferenceBasic copy(SqmCopyContext context) {
+		return new SqmMaxElementReferenceBasic(
+				getPluralAttributeReference().copy( context ),
+				context.getCreationContext()
+		);
 	}
 
 	@Override

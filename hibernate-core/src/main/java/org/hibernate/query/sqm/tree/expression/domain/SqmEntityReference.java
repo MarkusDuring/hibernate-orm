@@ -12,12 +12,15 @@ import org.hibernate.query.sqm.SemanticException;
 import org.hibernate.query.sqm.consume.spi.SemanticQueryWalker;
 import org.hibernate.query.sqm.produce.path.spi.SemanticPathPart;
 import org.hibernate.query.sqm.produce.spi.SqmCreationContext;
+import org.hibernate.query.sqm.tree.SqmCopyContext;
 import org.hibernate.query.sqm.tree.expression.SqmExpression;
 import org.hibernate.query.sqm.tree.from.SqmFrom;
 import org.hibernate.sql.ast.produce.metamodel.spi.EntityValuedExpressableType;
 import org.hibernate.sql.ast.produce.metamodel.spi.NavigableContainerReferenceInfo;
 
 import org.jboss.logging.Logger;
+
+import javax.persistence.criteria.Path;
 
 /**
  * Defines a reference to an entity that is the root of a TableSpace:
@@ -29,7 +32,7 @@ import org.jboss.logging.Logger;
  * @author Steve Ebersole
  */
 public class SqmEntityReference extends AbstractSqmNavigableReference
-		implements SqmNavigableReference, SqmNavigableContainerReference, SqmEntityTypedReference {
+		implements SqmNavigableReference, SqmNavigableContainerReference, SqmEntityTypedReference, Path {
 	private static final Logger log = Logger.getLogger( SqmEntityReference.class );
 
 	private final EntityDescriptor entityDescriptor;
@@ -41,6 +44,7 @@ public class SqmEntityReference extends AbstractSqmNavigableReference
 			EntityDescriptor entityDescriptor,
 			SqmFrom sqmFrom,
 			SqmCreationContext creationContext) {
+		super( creationContext );
 		this.entityDescriptor = entityDescriptor;
 		this.exportedFromElement = sqmFrom;
 		this.propertyPath = new NavigablePath( null, this.entityDescriptor.getEntityName() + '(' + sqmFrom.getIdentificationVariable() + ')' );
@@ -48,6 +52,15 @@ public class SqmEntityReference extends AbstractSqmNavigableReference
 
 	public EntityDescriptor getEntityDescriptor() {
 		return entityDescriptor;
+	}
+
+	@Override
+	public SqmEntityReference copy(SqmCopyContext context) {
+		return new SqmEntityReference(
+				entityDescriptor,
+				exportedFromElement.copy( context ),
+				context.getCreationContext()
+		);
 	}
 
 	@Override

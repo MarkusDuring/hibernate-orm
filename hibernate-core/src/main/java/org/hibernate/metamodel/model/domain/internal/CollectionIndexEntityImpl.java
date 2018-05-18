@@ -107,7 +107,7 @@ public class CollectionIndexEntityImpl<J>
 			SqmFrom sourceSqmFrom,
 			SqmNavigableContainerReference containerReference,
 			SqmCreationContext creationContext) {
-		return new SqmCollectionIndexReferenceEntity( (SqmPluralAttributeReference) containerReference );
+		return new SqmCollectionIndexReferenceEntity( (SqmPluralAttributeReference) containerReference, creationContext );
 	}
 
 	@Override

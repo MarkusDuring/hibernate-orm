@@ -6,17 +6,24 @@
  */
 package org.hibernate.query.sqm.tree.expression;
 
-import java.math.BigInteger;
-
-import org.hibernate.sql.ast.produce.metamodel.spi.BasicValuedExpressableType;
+import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.query.sqm.consume.spi.SemanticQueryWalker;
+import org.hibernate.query.sqm.tree.SqmCopyContext;
+import org.hibernate.sql.ast.produce.metamodel.spi.BasicValuedExpressableType;
+
+import java.math.BigInteger;
 
 /**
  * @author Steve Ebersole
  */
 public class SqmLiteralBigInteger extends AbstractSqmLiteral<BigInteger> {
-	public SqmLiteralBigInteger(BigInteger value, BasicValuedExpressableType expressionType) {
-		super( value, expressionType );
+	public SqmLiteralBigInteger(SessionFactoryImplementor sessionFactory, BigInteger value, BasicValuedExpressableType expressionType) {
+		super( sessionFactory, value, expressionType );
+	}
+
+	@Override
+	public SqmLiteralBigInteger copy(SqmCopyContext context) {
+		return this;
 	}
 
 	@Override

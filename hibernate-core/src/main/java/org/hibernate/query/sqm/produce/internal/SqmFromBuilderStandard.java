@@ -13,6 +13,7 @@ import org.hibernate.query.sqm.tree.expression.domain.SqmNavigableReference;
 import org.hibernate.query.sqm.tree.from.SqmFromElementSpace;
 import org.hibernate.query.sqm.tree.from.SqmNavigableJoin;
 
+import org.hibernate.sql.ast.produce.metamodel.spi.Joinable;
 import org.jboss.logging.Logger;
 
 /**
@@ -59,14 +60,15 @@ public class SqmFromBuilderStandard extends AbstractSqmFromBuilder {
 			return cachedJoin;
 		}
 
-
-		final SqmNavigableJoin navigableJoin = new SqmNavigableJoin(
+		Joinable<?> joinable = (Joinable<?>) navigableReference.getReferencedNavigable();
+		final SqmNavigableJoin navigableJoin = (SqmNavigableJoin) joinable.createJoin(
 				navigableReference.getSourceReference().getExportedFromElement(),
 				navigableReference,
 				uid,
 				alias,
 				SqmJoinType.INNER,
-				false
+				false,
+				getSqmCreationContext()
 		);
 
 		fromElementSpace.addJoin( navigableJoin );

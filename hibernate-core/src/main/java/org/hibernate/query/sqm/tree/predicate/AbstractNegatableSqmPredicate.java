@@ -6,17 +6,20 @@
  */
 package org.hibernate.query.sqm.tree.predicate;
 
+import org.hibernate.engine.spi.SessionFactoryImplementor;
+
 /**
  * @author Steve Ebersole
  */
-public abstract class AbstractNegatableSqmPredicate implements NegatableSqmPredicate {
+public abstract class AbstractNegatableSqmPredicate extends AbstractSqmPredicate implements NegatableSqmPredicate {
 	private boolean negated;
 
-	public AbstractNegatableSqmPredicate() {
-		this( false );
+	public AbstractNegatableSqmPredicate(SessionFactoryImplementor sessionFactory) {
+		this( sessionFactory, false );
 	}
 
-	public AbstractNegatableSqmPredicate(boolean negated) {
+	public AbstractNegatableSqmPredicate(SessionFactoryImplementor sessionFactory, boolean negated) {
+		super( sessionFactory );
 		this.negated = negated;
 	}
 

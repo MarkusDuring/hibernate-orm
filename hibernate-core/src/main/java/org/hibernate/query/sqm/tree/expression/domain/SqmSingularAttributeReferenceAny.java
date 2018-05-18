@@ -10,6 +10,7 @@ import org.hibernate.NotYetImplementedFor6Exception;
 import org.hibernate.metamodel.model.domain.spi.SingularPersistentAttribute;
 import org.hibernate.query.sqm.consume.spi.SemanticQueryWalker;
 import org.hibernate.query.sqm.produce.spi.SqmCreationContext;
+import org.hibernate.query.sqm.tree.SqmCopyContext;
 import org.hibernate.query.sqm.tree.from.SqmFrom;
 
 /**
@@ -20,7 +21,16 @@ public class SqmSingularAttributeReferenceAny extends AbstractSqmSingularAttribu
 			SqmNavigableContainerReference navigableContainerReference,
 			SingularPersistentAttribute referencedNavigable,
 			SqmCreationContext creationContext) {
-		super( navigableContainerReference, referencedNavigable );
+		super( navigableContainerReference, referencedNavigable, creationContext );
+	}
+
+	@Override
+	public SqmSingularAttributeReferenceAny copy(SqmCopyContext context) {
+		return new SqmSingularAttributeReferenceAny(
+				getSourceReference(),
+				getReferencedNavigable(),
+				context.getCreationContext()
+		);
 	}
 
 	@Override
@@ -36,5 +46,10 @@ public class SqmSingularAttributeReferenceAny extends AbstractSqmSingularAttribu
 	@Override
 	public <T> T accept(SemanticQueryWalker<T> walker) {
 		return walker.visitAnyValuedSingularAttribute( this );
+	}
+
+	@Override
+	protected boolean canBeDereferenced() {
+		return true;
 	}
 }

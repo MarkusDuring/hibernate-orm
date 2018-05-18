@@ -17,12 +17,15 @@ import java.util.Comparator;
 import org.hibernate.HibernateException;
 import org.hibernate.engine.jdbc.BinaryStream;
 import org.hibernate.engine.jdbc.internal.BinaryStreamImpl;
+import org.hibernate.engine.spi.SessionFactoryImplementor;
+import org.hibernate.query.sqm.tree.expression.SqmLiteral;
 import org.hibernate.type.descriptor.java.spi.AbstractBasicJavaDescriptor;
 import org.hibernate.type.descriptor.java.spi.ArrayMutabilityPlan;
 import org.hibernate.type.descriptor.spi.IncomparableComparator;
 import org.hibernate.type.descriptor.spi.JdbcRecommendedSqlTypeMappingContext;
 import org.hibernate.type.descriptor.spi.WrapperOptions;
 import org.hibernate.type.descriptor.sql.spi.SqlTypeDescriptor;
+import org.hibernate.type.spi.BasicType;
 
 /**
  * Descriptor for {@code Byte[]} handling.
@@ -48,6 +51,11 @@ public class ByteArrayJavaDescriptor extends AbstractBasicJavaDescriptor<Byte[]>
 		}
 
 		return context.getTypeConfiguration().getSqlTypeDescriptorRegistry().getDescriptor( jdbcCode );
+	}
+
+	@Override
+	public SqmLiteral<Byte[]> createLiteralExpression(SessionFactoryImplementor sessionFactory, BasicType<Byte[]> basicType, Byte[] value) {
+		return null;
 	}
 
 	@Override

@@ -16,11 +16,12 @@ import org.hibernate.query.sqm.AliasCollisionException;
 import org.hibernate.query.sqm.produce.spi.ImplicitAliasGenerator;
 import org.hibernate.query.sqm.tree.SqmQuerySpec;
 import org.hibernate.query.sqm.tree.SqmSelectStatement;
+import org.hibernate.query.sqm.tree.expression.SqmSubQuery;
 import org.hibernate.query.sqm.tree.expression.domain.SqmNavigableReference;
 import org.hibernate.query.sqm.tree.from.SqmFromElementSpace;
-import org.hibernate.query.sqm.tree.predicate.InSubQuerySqmPredicate;
+import org.hibernate.query.sqm.tree.predicate.InListSqmPredicate;
 import org.hibernate.query.sqm.tree.predicate.RelationalSqmPredicate;
-import org.hibernate.query.sqm.tree.select.SqmSelection;
+import org.hibernate.query.sqm.tree.select.SqmSelectionBase;
 
 import org.hibernate.testing.junit5.ExpectedException;
 import org.junit.jupiter.api.Test;
@@ -86,7 +87,7 @@ public class AliasCollisionTest extends BaseSqmUnitTest {
 
 		final SqmQuerySpec querySpec = sqm.getQuerySpec();
 
-		final List<SqmSelection> selections = querySpec.getSelectClause().getSelections();
+		final List<SqmSelectionBase> selections = querySpec.getSelectClause().getSelections();
 		assertThat( selections, hasSize( 1 ) );
 		assertTrue( ImplicitAliasGenerator.isImplicitAlias( selections.get( 0 ).getAlias() ) );
 
@@ -95,11 +96,10 @@ public class AliasCollisionTest extends BaseSqmUnitTest {
 		assertThat( spaces.get( 0 ).getJoins(), isEmpty() );
 		assertThat( spaces.get( 0 ).getRoot().getIdentificationVariable(), is( "a" ) );
 
-		assertThat( querySpec.getWhereClause().getPredicate(), instanceOf( InSubQuerySqmPredicate.class ) );
-		final InSubQuerySqmPredicate predicate = (InSubQuerySqmPredicate) querySpec.getWhereClause().getPredicate();
-
-		final SqmFromElementSpace subQuerySpace = predicate.getSubQueryExpression()
-				.getQuerySpec()
+		assertThat( querySpec.getWhereClause().getPredicate(), instanceOf( InListSqmPredicate.class ) );
+		final InListSqmPredicate predicate = (InListSqmPredicate) querySpec.getWhereClause().getPredicate();
+		final SqmSubQuery subQuery = (SqmSubQuery) predicate.getListExpressions().get( 0 );
+		final SqmFromElementSpace subQuerySpace = subQuery.getQuerySpec()
 				.getFromClause()
 				.getFromElementSpaces()
 				.get( 0 );
@@ -115,7 +115,7 @@ public class AliasCollisionTest extends BaseSqmUnitTest {
 
 		final SqmQuerySpec querySpec = sqm.getQuerySpec();
 
-		final List<SqmSelection> selections = querySpec.getSelectClause().getSelections();
+		final List<SqmSelectionBase> selections = querySpec.getSelectClause().getSelections();
 		assertThat( selections, hasSize( 1 ) );
 		assertTrue( ImplicitAliasGenerator.isImplicitAlias( selections.get( 0 ).getAlias() ) );
 
@@ -124,10 +124,10 @@ public class AliasCollisionTest extends BaseSqmUnitTest {
 		assertThat( spaces.get( 0 ).getJoins(), isEmpty() );
 		assertThat( spaces.get( 0 ).getRoot().getIdentificationVariable(), is( "a" ) );
 
-		assertThat( querySpec.getWhereClause().getPredicate(), instanceOf( InSubQuerySqmPredicate.class ) );
-		final InSubQuerySqmPredicate predicate = (InSubQuerySqmPredicate) querySpec.getWhereClause().getPredicate();
-
-		final SqmQuerySpec subQuerySpec = predicate.getSubQueryExpression().getQuerySpec();
+		assertThat( querySpec.getWhereClause().getPredicate(), instanceOf( InListSqmPredicate.class ) );
+		final InListSqmPredicate predicate = (InListSqmPredicate) querySpec.getWhereClause().getPredicate();
+		final SqmSubQuery subQuery = (SqmSubQuery) predicate.getListExpressions().get( 0 );
+		final SqmQuerySpec subQuerySpec = subQuery.getQuerySpec();
 
 		assertThat(
 				subQuerySpec.getFromClause().getFromElementSpaces().get( 0 ).getRoot().getIdentificationVariable(),

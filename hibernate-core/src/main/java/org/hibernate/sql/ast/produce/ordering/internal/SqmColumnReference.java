@@ -12,6 +12,8 @@ import org.hibernate.query.NavigablePath;
 import org.hibernate.query.sqm.consume.spi.SemanticQueryWalker;
 import org.hibernate.query.sqm.produce.path.spi.SemanticPathPart;
 import org.hibernate.query.sqm.produce.spi.SqmCreationContext;
+import org.hibernate.query.sqm.tree.SqmCopyContext;
+import org.hibernate.query.sqm.tree.expression.AbstractSqmExpression;
 import org.hibernate.query.sqm.tree.expression.SqmExpression;
 import org.hibernate.query.sqm.tree.expression.domain.SqmNavigableContainerReference;
 import org.hibernate.query.sqm.tree.expression.domain.SqmNavigableReference;
@@ -24,13 +26,21 @@ import org.hibernate.type.descriptor.java.spi.JavaTypeDescriptor;
 /**
  * @author Steve Ebersole
  */
-public class SqmColumnReference implements SqmExpression, SqmNavigableReference {
+public class SqmColumnReference extends AbstractSqmExpression implements SqmExpression, SqmNavigableReference {
+	private final SqmCreationContext creationContext;
 	private final SqmFrom sqmFromBase;
 	private final String columnName;
 
-	public SqmColumnReference(SqmFrom sqmFromBase, String columnName) {
+	public SqmColumnReference(SqmCreationContext creationContext, SqmFrom sqmFromBase, String columnName) {
+		super( creationContext.getSessionFactory() );
+		this.creationContext = creationContext;
 		this.sqmFromBase = sqmFromBase;
 		this.columnName = columnName;
+	}
+
+	@Override
+	public SqmCreationContext getCreationContext() {
+		return creationContext;
 	}
 
 	public SqmFrom getSqmFromBase() {
@@ -49,6 +59,15 @@ public class SqmColumnReference implements SqmExpression, SqmNavigableReference 
 	@Override
 	public ExpressableType getInferableType() {
 		return null;
+	}
+
+	@Override
+	public SqmColumnReference copy(SqmCopyContext context) {
+		return new SqmColumnReference(
+                context.getCreationContext(),
+				sqmFromBase.copy( context ),
+				columnName
+		);
 	}
 
 	@Override

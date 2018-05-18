@@ -6,9 +6,11 @@
  */
 package org.hibernate.query.sqm.tree.expression.function;
 
-import org.hibernate.sql.ast.produce.metamodel.spi.BasicValuedExpressableType;
+import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.query.sqm.consume.spi.SemanticQueryWalker;
+import org.hibernate.query.sqm.tree.SqmCopyContext;
 import org.hibernate.query.sqm.tree.expression.SqmExpression;
+import org.hibernate.sql.ast.produce.metamodel.spi.BasicValuedExpressableType;
 import org.hibernate.sql.ast.tree.spi.TrimSpecification;
 
 /**
@@ -22,11 +24,12 @@ public class SqmTrimFunction extends AbstractSqmFunction {
 	private final SqmExpression source;
 
 	public SqmTrimFunction(
+			SessionFactoryImplementor sessionFactory,
 			BasicValuedExpressableType resultType,
 			TrimSpecification specification,
 			SqmExpression trimCharacter,
 			SqmExpression source) {
-		super( resultType );
+		super( sessionFactory, resultType );
 		this.specification = specification;
 		this.trimCharacter = trimCharacter;
 		this.source = source;
@@ -56,6 +59,17 @@ public class SqmTrimFunction extends AbstractSqmFunction {
 	@Override
 	public boolean hasArguments() {
 		return true;
+	}
+
+	@Override
+	public SqmTrimFunction copy(SqmCopyContext context) {
+		return new SqmTrimFunction(
+                getSessionFactory(),
+				(BasicValuedExpressableType) getExpressableType(),
+				specification,
+				trimCharacter.copy( context ),
+				source.copy( context )
+		);
 	}
 
 	@Override

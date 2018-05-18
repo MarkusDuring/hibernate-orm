@@ -10,6 +10,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import org.hibernate.query.sqm.tree.SqmCopyContext;
 import org.hibernate.query.sqm.tree.expression.domain.SqmSingularAttributeReference;
 import org.hibernate.query.sqm.tree.expression.SqmExpression;
 
@@ -18,6 +19,13 @@ import org.hibernate.query.sqm.tree.expression.SqmExpression;
  */
 public class SqmSetClause {
 	private List<SqmAssignment> assignments = new ArrayList<>();
+
+	public SqmSetClause() {
+	}
+
+	private SqmSetClause(List<SqmAssignment> assignments) {
+		this.assignments = assignments;
+	}
 
 	public List<SqmAssignment> getAssignments() {
 		return Collections.unmodifiableList( assignments );
@@ -29,5 +37,14 @@ public class SqmSetClause {
 
 	public void addAssignment(SqmSingularAttributeReference stateField, SqmExpression value) {
 		addAssignment( new SqmAssignment( stateField, value ) );
+	}
+
+	public void copyFrom(SqmSetClause source, SqmCopyContext context) {
+		List<SqmAssignment> newAssignments = new ArrayList<>( source.assignments.size() );
+		for ( SqmAssignment assignment : source.assignments ) {
+			newAssignments.add( assignment.copy( context ) );
+		}
+
+		this.assignments = newAssignments;
 	}
 }

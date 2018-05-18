@@ -12,6 +12,8 @@ import org.hibernate.query.sqm.tree.expression.domain.SqmNavigableContainerRefer
 import org.hibernate.query.sqm.tree.expression.domain.SqmNavigableReference;
 import org.hibernate.query.sqm.tree.from.SqmFromElementSpace;
 
+import javax.persistence.criteria.CommonAbstractCriteria;
+
 /**
  * The "context" object for creation of SQM objects
  *
@@ -25,6 +27,12 @@ public interface SqmCreationContext {
 	SqmFromElementSpace getCurrentFromElementSpace();
 
 	SqmFromBuilder getCurrentFromElementBuilder();
+
+	void setCurrentFromElementBuilder(SqmFromBuilder fromBuilder);
+
+	CommonAbstractCriteria getCurrentContainingQuery();
+
+	void setCurrentContainingQuery(CommonAbstractCriteria currentContainingQuery);
 
 	CurrentSqmFromElementSpaceCoordAccess getCurrentSqmFromElementSpaceCoordAccess();
 

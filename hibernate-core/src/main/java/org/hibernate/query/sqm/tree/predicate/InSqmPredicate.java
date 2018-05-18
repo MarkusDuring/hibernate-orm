@@ -8,9 +8,11 @@ package org.hibernate.query.sqm.tree.predicate;
 
 import org.hibernate.query.sqm.tree.expression.SqmExpression;
 
+import javax.persistence.criteria.CriteriaBuilder;
+
 /**
  * @author Steve Ebersole
  */
-public interface InSqmPredicate extends NegatableSqmPredicate {
+public interface InSqmPredicate extends NegatableSqmPredicate, CriteriaBuilder.In<Object> {
 	SqmExpression getTestExpression();
 }

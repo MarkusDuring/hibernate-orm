@@ -6,11 +6,15 @@
  */
 package org.hibernate.query.sqm.tree.from;
 
+import org.hibernate.query.sqm.tree.SqmCopyContext;
 import org.hibernate.query.sqm.tree.SqmJoinType;
 
 /**
  * @author Steve Ebersole
  */
 public interface SqmJoin extends SqmFrom {
-	SqmJoinType getJoinType();
+	SqmJoinType getSqmJoinType();
+
+	@Override
+	SqmJoin copy(SqmCopyContext context);
 }

@@ -16,6 +16,8 @@ import org.jboss.logging.Logger;
 public interface SqmNode {
 	Logger log = Logger.getLogger( SqmNode.class );
 
+	SqmNode copy(SqmCopyContext context);
+
 	default String asLoggableText() {
 		log.warnf( "#asLoggableText not defined for %s - using #toString", getClass().getName() );
 		return toString();

@@ -6,8 +6,11 @@
  */
 package org.hibernate.query.sqm.tree.expression;
 
+import org.hibernate.query.sqm.tree.SqmCopyContext;
 import org.hibernate.query.sqm.tree.select.SqmSelectableNode;
 import org.hibernate.sql.ast.produce.metamodel.spi.ExpressableType;
+
+import javax.persistence.criteria.Expression;
 
 /**
  * The base contract for any kind of expression node in the SQM tree.
@@ -15,7 +18,11 @@ import org.hibernate.sql.ast.produce.metamodel.spi.ExpressableType;
  *
  * @author Steve Ebersole
  */
-public interface SqmExpression extends SqmSelectableNode {
+public interface SqmExpression extends SqmSelectableNode, Expression {
+
+	@Override
+	SqmExpression copy(SqmCopyContext context);
+
 	/**
 	 * Obtain reference to the expression's ExpressableType
 	 *

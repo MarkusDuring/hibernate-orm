@@ -14,11 +14,19 @@ import org.hibernate.query.sqm.SemanticException;
 import org.hibernate.query.sqm.consume.spi.SemanticQueryWalker;
 import org.hibernate.query.sqm.produce.path.spi.SemanticPathPart;
 import org.hibernate.query.sqm.produce.spi.SqmCreationContext;
+import org.hibernate.query.sqm.tree.SqmCopyContext;
 import org.hibernate.query.sqm.tree.expression.SqmExpression;
 import org.hibernate.query.sqm.tree.from.SqmFrom;
 import org.hibernate.sql.ast.produce.metamodel.spi.ExpressableType;
 import org.hibernate.sql.ast.produce.metamodel.spi.NavigableContainerReferenceInfo;
 import org.hibernate.type.descriptor.java.spi.JavaTypeDescriptor;
+
+import javax.persistence.criteria.Expression;
+import javax.persistence.criteria.Path;
+import javax.persistence.metamodel.Bindable;
+import javax.persistence.metamodel.MapAttribute;
+import javax.persistence.metamodel.PluralAttribute;
+import javax.persistence.metamodel.SingularAttribute;
 
 /**
  * @author Steve Ebersole
@@ -30,9 +38,19 @@ public class SqmEntityIdentifierReferenceSimple
 	private final SqmEntityTypedReference source;
 	private final EntityIdentifierSimple entityIdentifier;
 
-	public SqmEntityIdentifierReferenceSimple(SqmEntityTypedReference source, EntityIdentifierSimple entityIdentifier) {
+	public SqmEntityIdentifierReferenceSimple(SqmEntityTypedReference source, EntityIdentifierSimple entityIdentifier, SqmCreationContext creationContext) {
+		super( creationContext );
 		this.source = source;
 		this.entityIdentifier = entityIdentifier;
+	}
+
+	@Override
+	public SqmEntityIdentifierReferenceSimple copy(SqmCopyContext context) {
+		return new SqmEntityIdentifierReferenceSimple(
+				source.copy( context ),
+				entityIdentifier,
+				context.getCreationContext()
+		);
 	}
 
 	@Override
@@ -130,4 +148,39 @@ public class SqmEntityIdentifierReferenceSimple
 		return getSourceReference().getExportedFromElement();
 	}
 	// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+	@Override
+	public Bindable getModel() {
+		return getReferencedNavigable();
+	}
+
+	@Override
+	public Path<?> getParentPath() {
+		return source;
+	}
+
+	@Override
+	public Path get(SingularAttribute attribute) {
+		throw illegalDereference();
+	}
+
+	@Override
+	public Expression get(PluralAttribute collection) {
+		throw illegalDereference();
+	}
+
+	@Override
+	public Expression get(MapAttribute map) {
+		throw illegalDereference();
+	}
+
+	@Override
+	public Path get(String attributeName) {
+		throw illegalDereference();
+	}
+
+	@Override
+	public Expression<Class> type() {
+		return new SqmEntityTypeExpression(this, getSessionFactory());
+	}
 }

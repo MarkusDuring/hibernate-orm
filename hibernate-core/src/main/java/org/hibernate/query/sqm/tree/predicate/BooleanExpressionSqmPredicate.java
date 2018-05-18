@@ -6,7 +6,9 @@
  */
 package org.hibernate.query.sqm.tree.predicate;
 
+import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.query.sqm.consume.spi.SemanticQueryWalker;
+import org.hibernate.query.sqm.tree.SqmCopyContext;
 import org.hibernate.query.sqm.tree.expression.SqmExpression;
 import org.hibernate.type.spi.BasicType;
 
@@ -15,10 +17,11 @@ import org.hibernate.type.spi.BasicType;
  *
  * @author Steve Ebersole
  */
-public class BooleanExpressionSqmPredicate implements SqmPredicate {
+public class BooleanExpressionSqmPredicate extends AbstractSqmPredicate implements SqmPredicate {
 	private final SqmExpression booleanExpression;
 
-	public BooleanExpressionSqmPredicate(SqmExpression booleanExpression) {
+	public BooleanExpressionSqmPredicate(SessionFactoryImplementor sessionFactory, SqmExpression booleanExpression) {
+		super( sessionFactory );
 		assert booleanExpression.getExpressableType() != null;
 		final Class expressionJavaType = ( (BasicType) booleanExpression.getExpressableType() ).getJavaType();
 		assert boolean.class.equals( expressionJavaType ) || Boolean.class.equals( expressionJavaType );
@@ -28,6 +31,14 @@ public class BooleanExpressionSqmPredicate implements SqmPredicate {
 
 	public SqmExpression getBooleanExpression() {
 		return booleanExpression;
+	}
+
+	@Override
+	public BooleanExpressionSqmPredicate copy(SqmCopyContext context) {
+		return new BooleanExpressionSqmPredicate(
+				sessionFactory,
+				booleanExpression.copy( context )
+		);
 	}
 
 	@Override

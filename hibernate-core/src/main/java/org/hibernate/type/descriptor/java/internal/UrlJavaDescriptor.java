@@ -10,10 +10,14 @@ import java.net.MalformedURLException;
 import java.net.URL;
 
 import org.hibernate.HibernateException;
+import org.hibernate.engine.spi.SessionFactoryImplementor;
+import org.hibernate.query.sqm.tree.expression.SqmLiteral;
+import org.hibernate.query.sqm.tree.expression.SqmLiteralGeneric;
 import org.hibernate.type.descriptor.java.spi.AbstractBasicJavaDescriptor;
 import org.hibernate.type.descriptor.spi.JdbcRecommendedSqlTypeMappingContext;
 import org.hibernate.type.descriptor.spi.WrapperOptions;
 import org.hibernate.type.descriptor.sql.spi.SqlTypeDescriptor;
+import org.hibernate.type.spi.BasicType;
 
 /**
  * Descriptor for {@link URL} handling.
@@ -30,6 +34,11 @@ public class UrlJavaDescriptor extends AbstractBasicJavaDescriptor<URL> {
 	@Override
 	public SqlTypeDescriptor getJdbcRecommendedSqlType(JdbcRecommendedSqlTypeMappingContext context) {
 		return StringJavaDescriptor.INSTANCE.getJdbcRecommendedSqlType( context );
+	}
+
+	@Override
+	public SqmLiteral<URL> createLiteralExpression(SessionFactoryImplementor sessionFactory, BasicType<URL> basicType, URL value) {
+		return new SqmLiteralGeneric<>( sessionFactory, value, basicType, getMutabilityPlan() );
 	}
 
 	public String toString(URL value) {

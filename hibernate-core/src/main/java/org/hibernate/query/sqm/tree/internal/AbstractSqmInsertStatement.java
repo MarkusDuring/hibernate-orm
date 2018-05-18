@@ -10,6 +10,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import org.hibernate.query.sqm.produce.spi.SqmCreationContext;
 import org.hibernate.query.sqm.tree.SqmInsertStatement;
 import org.hibernate.query.sqm.tree.expression.domain.SqmSingularAttributeReference;
 import org.hibernate.query.sqm.tree.from.SqmRoot;
@@ -23,8 +24,15 @@ public abstract class AbstractSqmInsertStatement extends AbstractSqmStatement im
 	private final SqmRoot insertTarget;
 	private List<SqmSingularAttributeReference> stateFields;
 
-	public AbstractSqmInsertStatement(SqmRoot insertTarget) {
+	public AbstractSqmInsertStatement(SqmCreationContext creationContext, SqmRoot insertTarget) {
+		super( creationContext );
 		this.insertTarget = insertTarget;
+	}
+
+	protected AbstractSqmInsertStatement(SqmCreationContext creationContext, SqmRoot insertTarget, List<SqmSingularAttributeReference> stateFields) {
+		super( creationContext );
+		this.insertTarget = insertTarget;
+		this.stateFields = stateFields;
 	}
 
 	@Override

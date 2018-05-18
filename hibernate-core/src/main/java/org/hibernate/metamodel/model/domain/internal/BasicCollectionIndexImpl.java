@@ -95,7 +95,7 @@ public class BasicCollectionIndexImpl<J>
 			SqmFrom sourceSqmFrom,
 			SqmNavigableContainerReference containerReference,
 			SqmCreationContext creationContext) {
-		return new SqmCollectionIndexReferenceBasic( (SqmPluralAttributeReference) containerReference );
+		return new SqmCollectionIndexReferenceBasic( (SqmPluralAttributeReference) containerReference, creationContext );
 	}
 
 	@Override

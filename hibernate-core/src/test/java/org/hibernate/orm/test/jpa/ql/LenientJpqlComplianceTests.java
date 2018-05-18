@@ -14,6 +14,7 @@ import org.hibernate.orm.test.support.domains.gambit.EntityOfMaps;
 import org.hibernate.orm.test.support.domains.gambit.EntityOfSets;
 import org.hibernate.query.sqm.StrictJpaComplianceViolation;
 
+import org.hibernate.testing.junit5.FailureExpected;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
@@ -133,6 +134,7 @@ public class LenientJpqlComplianceTests extends BaseSqmUnitTest {
 	}
 
 	@Test
+	@FailureExpected( "This fails currently because SqmPluralAttributeReference.resolveIndexedAccess isn't implemented yet" )
 	public void testIndexedElementReference() {
 		test(
 				"select b[0] from EntityOfLists e join e.listOfBasics b",

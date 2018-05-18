@@ -6,7 +6,9 @@
  */
 package org.hibernate.query.sqm.tree.expression;
 
+import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.query.sqm.consume.spi.SemanticQueryWalker;
+import org.hibernate.query.sqm.tree.SqmCopyContext;
 import org.hibernate.sql.ast.produce.metamodel.spi.BasicValuedExpressableType;
 import org.hibernate.sql.ast.produce.metamodel.spi.ExpressableType;
 import org.hibernate.type.descriptor.java.spi.JavaTypeDescriptor;
@@ -14,15 +16,16 @@ import org.hibernate.type.descriptor.java.spi.JavaTypeDescriptor;
 /**
  * @author Steve Ebersole
  */
-public class SqmConstantEnum<T extends Enum> implements SqmConstantReference<T> {
+public class SqmConstantEnum<T extends Enum> extends AbstractSqmExpression implements SqmConstantReference<T> {
 	private final T value;
 	private BasicValuedExpressableType domainType;
 
-	public SqmConstantEnum(T value) {
-		this( value, null );
+	public SqmConstantEnum(SessionFactoryImplementor sessionFactory, T value) {
+		this( sessionFactory, value, null );
 	}
 
-	public SqmConstantEnum(T value, BasicValuedExpressableType domainType) {
+	public SqmConstantEnum(SessionFactoryImplementor sessionFactory, T value, BasicValuedExpressableType domainType) {
+		super( sessionFactory );
 		this.value = value;
 		this.domainType = domainType;
 	}
@@ -46,6 +49,11 @@ public class SqmConstantEnum<T extends Enum> implements SqmConstantReference<T> 
 	@SuppressWarnings("unchecked")
 	public void impliedType(ExpressableType expressableType) {
 		this.domainType = (BasicValuedExpressableType) expressableType;
+	}
+
+	@Override
+	public SqmConstantEnum copy(SqmCopyContext context) {
+		return this;
 	}
 
 	@Override

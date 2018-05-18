@@ -23,6 +23,7 @@ import org.hibernate.internal.util.StringHelper;
 import org.hibernate.internal.util.compare.ComparableComparator;
 import org.hibernate.query.spi.ParameterMetadataImplementor;
 import org.hibernate.query.spi.QueryParameterImplementor;
+import org.hibernate.query.sqm.tree.expression.SqmParameter;
 
 /**
  * Encapsulates metadata about parameters encountered within a query.
@@ -32,16 +33,21 @@ import org.hibernate.query.spi.QueryParameterImplementor;
 public class ParameterMetadataImpl implements ParameterMetadataImplementor<QueryParameterImplementor<?>> {
 	private final Map<Integer,QueryParameterImplementor<?>> ordinalDescriptorMap;
 	private final Map<String,QueryParameterImplementor<?>> namedDescriptorMap;
+    private final Map<SqmParameter, QueryParameterImplementor<?>> anonymousDescriptorMap;
 
 	public ParameterMetadataImpl(
 			Map<Integer,QueryParameterImplementor<?>> ordinalDescriptorMap,
-			Map<String, QueryParameterImplementor<?>> namedDescriptorMap) {
+			Map<String, QueryParameterImplementor<?>> namedDescriptorMap,
+            Map<SqmParameter, QueryParameterImplementor<?>> anonymousDescriptorMap) {
 		this.ordinalDescriptorMap = ordinalDescriptorMap == null
 				? Collections.emptyMap()
 				: Collections.unmodifiableMap( ordinalDescriptorMap );
 		this.namedDescriptorMap = namedDescriptorMap == null
 				? Collections.emptyMap()
 				: Collections.unmodifiableMap( namedDescriptorMap );
+        this.anonymousDescriptorMap = anonymousDescriptorMap == null
+                ? Collections.emptyMap()
+                : Collections.unmodifiableMap(anonymousDescriptorMap);
 
 		if (ordinalDescriptorMap != null &&  ! ordinalDescriptorMap.isEmpty() ) {
 			final List<Integer> sortedPositions = new ArrayList<>( ordinalDescriptorMap.keySet() );
@@ -74,31 +80,34 @@ public class ParameterMetadataImpl implements ParameterMetadataImplementor<Query
 
 	@Override
 	public int getParameterCount() {
-		return ordinalDescriptorMap.size() + namedDescriptorMap.size();
+		return ordinalDescriptorMap.size() + namedDescriptorMap.size() + anonymousDescriptorMap.size();
 	}
 
 	@Override
 	@SuppressWarnings("SuspiciousMethodCalls")
 	public boolean containsReference(QueryParameterImplementor<?> parameter) {
 		return ordinalDescriptorMap.containsValue( parameter )
-				|| namedDescriptorMap.containsValue( parameter );
+				|| namedDescriptorMap.containsValue( parameter )
+                || anonymousDescriptorMap.containsValue( parameter );
 	}
 
 	@Override
 	public void visitRegistrations(Consumer<QueryParameterImplementor<?>> action) {
 		ordinalDescriptorMap.values().forEach( action );
 		namedDescriptorMap.values().forEach( action );
+                anonymousDescriptorMap.values().forEach( action );
 	}
 
 	@Override
 	public void collectAllParameters(ParameterCollector<QueryParameterImplementor<?>> collector) {
 		ordinalDescriptorMap.values().forEach( collector::collect );
 		namedDescriptorMap.values().forEach( collector::collect );
+        anonymousDescriptorMap.values().forEach( collector::collect );
 	}
 
 	@Override
 	public Set<QueryParameterImplementor<?>> getRegistrations() {
-		if ( ! hasNamedParameters() && ! hasPositionalParameters() ) {
+		if ( ! hasNamedParameters() && ! hasPositionalParameters() && !hasAnonymousParameters() ) {
 			return Collections.emptySet();
 		}
 
@@ -116,6 +125,12 @@ public class ParameterMetadataImpl implements ParameterMetadataImplementor<Query
 		}
 
 		for ( QueryParameterImplementor<?> queryParameter : namedDescriptorMap.values() ) {
+			if ( filter.test( queryParameter ) ) {
+				return true;
+			}
+		}
+
+		for ( QueryParameterImplementor<?> queryParameter : anonymousDescriptorMap.values() ) {
 			if ( filter.test( queryParameter ) ) {
 				return true;
 			}
@@ -182,6 +197,23 @@ public class ParameterMetadataImpl implements ParameterMetadataImplementor<Query
 	public Set<Integer> getOrdinalParameterLabels() {
 		return ordinalDescriptorMap.keySet();
 	}
+
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    // Anonymous parameter handling
+
+    @Override
+    public boolean hasAnonymousParameters() {
+        return !anonymousDescriptorMap.isEmpty();
+    }
+
+    @Override
+    public int getAnonymousParameterCount() {
+        return anonymousDescriptorMap.size();
+    }
+
+    public Map<SqmParameter, QueryParameterImplementor<?>> getAnonymousQueryParameters() {
+        return anonymousDescriptorMap;
+    }
 
 	@Override
 	@SuppressWarnings("unchecked")

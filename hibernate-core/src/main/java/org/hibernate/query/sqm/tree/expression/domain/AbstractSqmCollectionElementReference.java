@@ -28,7 +28,8 @@ public abstract class AbstractSqmCollectionElementReference extends AbstractSqmN
 	private final PluralPersistentAttribute navigable;
 	private final NavigablePath navigablePath;
 
-	public AbstractSqmCollectionElementReference(SqmPluralAttributeReference pluralAttributeBinding) {
+	public AbstractSqmCollectionElementReference(SqmPluralAttributeReference pluralAttributeBinding, SqmCreationContext creationContext) {
+		super( creationContext );
 		this.attributeReference = pluralAttributeBinding;
 		this.navigable = pluralAttributeBinding.getReferencedNavigable();
 

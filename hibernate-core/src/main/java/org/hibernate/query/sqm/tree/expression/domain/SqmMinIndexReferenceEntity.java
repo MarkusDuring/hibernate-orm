@@ -6,6 +6,8 @@
  */
 package org.hibernate.query.sqm.tree.expression.domain;
 
+import org.hibernate.query.sqm.produce.spi.SqmCreationContext;
+import org.hibernate.query.sqm.tree.SqmCopyContext;
 import org.hibernate.query.sqm.tree.from.SqmFrom;
 import org.hibernate.sql.ast.produce.metamodel.spi.EntityValuedExpressableType;
 
@@ -17,8 +19,16 @@ public class SqmMinIndexReferenceEntity
 		implements SqmMinIndexReference, SqmEntityTypedReference {
 	private SqmFrom exportedFromElement;
 
-	public SqmMinIndexReferenceEntity(SqmPluralAttributeReference pluralAttributeBinding) {
-		super( pluralAttributeBinding );
+	public SqmMinIndexReferenceEntity(SqmPluralAttributeReference pluralAttributeBinding, SqmCreationContext creationContext) {
+		super( pluralAttributeBinding, creationContext );
+	}
+
+	@Override
+	public SqmMinIndexReferenceEntity copy(SqmCopyContext context) {
+		return new SqmMinIndexReferenceEntity(
+				getPluralAttributeReference().copy( context ),
+				context.getCreationContext()
+		);
 	}
 
 	@Override

@@ -6,40 +6,69 @@
  */
 package org.hibernate.query.sqm.tree.select;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-
+import org.hibernate.query.sqm.tree.SqmCopyContext;
 import org.hibernate.query.sqm.tree.expression.SqmExpression;
+
+import javax.persistence.criteria.CompoundSelection;
+import javax.persistence.criteria.Selection;
+import java.util.*;
 
 /**
  * The semantic select clause.  Defined as a list of individual selections.
  *
  * @author Steve Ebersole
  */
-public class SqmSelectClause implements SqmAliasedExpressionContainer<SqmSelection> {
-	private final boolean distinct;
-	private List<SqmSelection> selections;
+public class SqmSelectClause implements SqmAliasedExpressionContainer<SqmSelectionBase>, CompoundSelection {
+	private boolean distinct;
+	private Class<?> javaType;
+	private List<SqmSelectionBase> selections;
 
 	public SqmSelectClause(boolean distinct) {
 		this.distinct = distinct;
+		this.javaType = Object[].class;
 	}
 
-	public SqmSelectClause(boolean distinct, List<SqmSelection> selections) {
+	public SqmSelectClause(boolean distinct, Class<?> javaType) {
 		this.distinct = distinct;
+		this.javaType = javaType;
+	}
+
+	public SqmSelectClause(Class<?> javaType, List<SqmSelectionBase> selections) {
+		this.distinct = false;
+		this.javaType = javaType;
 		this.selections = selections;
 	}
 
-	public SqmSelectClause(boolean distinct, SqmSelection... selections) {
-		this( distinct, Arrays.asList( selections ) );
+	public SqmSelectClause(boolean distinct, Class<?> javaType, List<SqmSelectionBase> selections) {
+		this.distinct = distinct;
+		this.javaType = javaType;
+		this.selections = selections;
+	}
+
+	public SqmSelectClause copy(SqmCopyContext context) {
+		List<SqmSelectionBase> newSelections = null;
+		if ( selections != null ) {
+			newSelections = new ArrayList<>( selections.size() );
+			for ( SqmSelectionBase selection : selections ) {
+				newSelections.add( selection.copy( context ) );
+			}
+		}
+		return new SqmSelectClause(
+				distinct,
+				javaType,
+				newSelections
+		);
 	}
 
 	public boolean isDistinct() {
 		return distinct;
 	}
 
-	public List<SqmSelection> getSelections() {
+	public void setDistinct(boolean distinct) {
+		this.distinct = distinct;
+	}
+
+	public List<SqmSelectionBase> getSelections() {
 		if ( selections == null ) {
 			return Collections.emptyList();
 		}
@@ -48,22 +77,97 @@ public class SqmSelectClause implements SqmAliasedExpressionContainer<SqmSelecti
 		}
 	}
 
-	public void addSelection(SqmSelection selection) {
+	private void clearSelections() {
+		if ( selections == null ) {
+			selections = new ArrayList<>();
+		} else {
+			selections.clear();
+		}
+	}
+
+	public void setSelection(SqmSelectionBase selection) {
+        checkSelection( selection );
+		clearSelections();
+		selections.add( selection );
+	}
+
+	public void setSelection(SqmSelectClause selectClause) {
+        checkSelection( selectClause );
+		clearSelections();
+		javaType = selectClause.getJavaType();
+		selections.addAll( selectClause.getSelections() );
+	}
+
+    private void checkSelection(Selection<?> selection) {
+        if ( selection instanceof CompoundSelection<?> ) {
+            checkSelection( selection, new HashSet<>( selection.getCompoundSelectionItems().size() ) );
+        }
+    }
+
+    private void checkSelection(Selection<?> selection, Set<String> aliases) {
+        for ( Selection<?> selectionItem : selection.getCompoundSelectionItems() ) {
+            if ( selectionItem.getAlias() != null && !aliases.add( selectionItem.getAlias() ) ) {
+                throw new IllegalArgumentException( "duplicate alias in select: " + selectionItem.getAlias() );
+            }
+
+            if ( selectionItem instanceof CompoundSelection<?> ) {
+				checkSelection( selectionItem, aliases );
+			}
+        }
+    }
+
+	public void addSelection(SqmSelectionBase selection) {
 		if ( selections == null ) {
 			selections = new ArrayList<>();
 		}
 		selections.add( selection );
 	}
 
+	public Selection<?> getSelection() {
+		if ( javaType.isArray() ) {
+			return this;
+		} else if ( selections.isEmpty() ) {
+			return null;
+		} else {
+			return selections.get( 0 );
+		}
+	}
+
 	@Override
-	public SqmSelection add(SqmExpression expression, String alias) {
-		final SqmSelection selection = new SqmSelection( expression, alias );
+	public SqmSelectionBase add(SqmExpression expression, String alias) {
+		final SqmSelectionBase selection = (SqmSelectionBase) expression;
+		selection.alias( alias );
 		addSelection( selection );
 		return selection;
 	}
 
 	@Override
-	public void add(SqmSelection aliasExpression) {
+	public void add(SqmSelectionBase aliasExpression) {
 		addSelection( aliasExpression );
+	}
+
+	@Override
+	public Selection alias(String name) {
+		return this;
+	}
+
+	@Override
+	public boolean isCompoundSelection() {
+		return true;
+	}
+
+	@Override
+	public List<Selection<?>> getCompoundSelectionItems() {
+		return (List<Selection<?>>) (List) getSelections();
+	}
+
+	@Override
+	public Class getJavaType() {
+		return javaType;
+	}
+
+	@Override
+	public String getAlias() {
+		return null;
 	}
 }

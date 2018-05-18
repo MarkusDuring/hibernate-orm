@@ -13,6 +13,7 @@ import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.metamodel.model.domain.spi.AllowableFunctionReturnType;
 import org.hibernate.query.sqm.produce.function.internal.SelfRenderingSqmFunction;
 import org.hibernate.query.sqm.produce.function.spi.SelfRenderingFunctionSupport;
+import org.hibernate.query.sqm.tree.SqmCopyContext;
 import org.hibernate.sql.ast.consume.spi.SqlAppender;
 import org.hibernate.sql.ast.consume.spi.SqlAstWalker;
 import org.hibernate.sql.ast.produce.SqlTreeException;
@@ -31,14 +32,15 @@ public class SqmJdbcFunctionEscapeWrapper
 	private final SqmFunction wrappedSqmFunction;
 
 	public SqmJdbcFunctionEscapeWrapper(
+			SessionFactoryImplementor sessionFactory,
 			SqmFunction wrappedSqmFunction,
 			AllowableFunctionReturnType impliedResultType) {
-		super( null, Collections.singletonList( wrappedSqmFunction ), impliedResultType );
+		super( sessionFactory, null, Collections.singletonList( wrappedSqmFunction ), impliedResultType );
 		this.wrappedSqmFunction = wrappedSqmFunction;
 	}
 
-	public SqmJdbcFunctionEscapeWrapper(SqmFunction wrappedSqmFunction) {
-		super( null, Collections.singletonList( wrappedSqmFunction ), wrappedSqmFunction.getExpressableType() );
+	public SqmJdbcFunctionEscapeWrapper(SessionFactoryImplementor sessionFactory, SqmFunction wrappedSqmFunction) {
+		super( sessionFactory, null, Collections.singletonList( wrappedSqmFunction ), wrappedSqmFunction.getExpressableType() );
 		this.wrappedSqmFunction = wrappedSqmFunction;
 	}
 
@@ -60,6 +62,15 @@ public class SqmJdbcFunctionEscapeWrapper
 	@Override
 	public String asLoggableText() {
 		return "wrapped-function[ " + wrappedSqmFunction.asLoggableText() + " ]";
+	}
+
+	@Override
+	public SqmJdbcFunctionEscapeWrapper copy(SqmCopyContext context) {
+		return new SqmJdbcFunctionEscapeWrapper(
+                getSessionFactory(),
+				wrappedSqmFunction.copy( context ),
+				getExpressableType()
+		);
 	}
 
 	@Override

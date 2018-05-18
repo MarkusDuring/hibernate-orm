@@ -128,7 +128,8 @@ public class NativeQueryImpl<R>
 
 		this.parameterMetadata = new ParameterMetadataImpl(
 				parameterRecognizer.getPositionalQueryParameters(),
-				parameterRecognizer.getNamedQueryParameters()
+				parameterRecognizer.getNamedQueryParameters(),
+				null
 		);
 		this.parameterBindings = QueryParameterBindingsImpl.from( parameterMetadata, session.getFactory() );
 

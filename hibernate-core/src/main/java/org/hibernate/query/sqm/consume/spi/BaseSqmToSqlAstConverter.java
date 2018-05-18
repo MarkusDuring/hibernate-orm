@@ -49,6 +49,11 @@ import org.hibernate.query.sqm.tree.expression.SqmLiteralString;
 import org.hibernate.query.sqm.tree.expression.SqmLiteralTime;
 import org.hibernate.query.sqm.tree.expression.SqmLiteralTimestamp;
 import org.hibernate.query.sqm.tree.expression.SqmLiteralTrue;
+import org.hibernate.query.sqm.tree.expression.SqmLiteralTimestamp;
+import org.hibernate.query.sqm.tree.expression.SqmLiteralTime;
+import org.hibernate.query.sqm.tree.expression.SqmLiteralDate;
+import org.hibernate.query.sqm.tree.expression.SqmLiteralGeneric;
+import org.hibernate.query.sqm.tree.expression.SqmAnonymousParameter;
 import org.hibernate.query.sqm.tree.expression.SqmNamedParameter;
 import org.hibernate.query.sqm.tree.expression.SqmPositionalParameter;
 import org.hibernate.query.sqm.tree.expression.SqmUnaryOperation;
@@ -89,6 +94,7 @@ import org.hibernate.query.sqm.tree.from.SqmFromElementSpace;
 import org.hibernate.query.sqm.tree.from.SqmJoin;
 import org.hibernate.query.sqm.tree.from.SqmNavigableJoin;
 import org.hibernate.query.sqm.tree.from.SqmRoot;
+import org.hibernate.query.sqm.tree.group.SqmGroupSpecification;
 import org.hibernate.query.sqm.tree.order.SqmOrderByClause;
 import org.hibernate.query.sqm.tree.order.SqmSortSpecification;
 import org.hibernate.query.sqm.tree.paging.SqmLimitOffsetClause;
@@ -96,13 +102,13 @@ import org.hibernate.query.sqm.tree.predicate.AndSqmPredicate;
 import org.hibernate.query.sqm.tree.predicate.BetweenSqmPredicate;
 import org.hibernate.query.sqm.tree.predicate.GroupedSqmPredicate;
 import org.hibernate.query.sqm.tree.predicate.InListSqmPredicate;
-import org.hibernate.query.sqm.tree.predicate.InSubQuerySqmPredicate;
 import org.hibernate.query.sqm.tree.predicate.LikeSqmPredicate;
 import org.hibernate.query.sqm.tree.predicate.NegatedSqmPredicate;
 import org.hibernate.query.sqm.tree.predicate.NullnessSqmPredicate;
 import org.hibernate.query.sqm.tree.predicate.OrSqmPredicate;
 import org.hibernate.query.sqm.tree.predicate.RelationalPredicateOperator;
 import org.hibernate.query.sqm.tree.predicate.RelationalSqmPredicate;
+import org.hibernate.query.sqm.tree.predicate.SqmHavingClause;
 import org.hibernate.query.sqm.tree.predicate.SqmWhereClause;
 import org.hibernate.query.sqm.tree.select.SqmSelectClause;
 import org.hibernate.sql.ast.JoinType;
@@ -150,6 +156,7 @@ import org.hibernate.sql.ast.tree.spi.expression.LowerFunction;
 import org.hibernate.sql.ast.tree.spi.expression.MaxFunction;
 import org.hibernate.sql.ast.tree.spi.expression.MinFunction;
 import org.hibernate.sql.ast.tree.spi.expression.ModFunction;
+import org.hibernate.sql.ast.tree.spi.expression.AnonymousParameter;
 import org.hibernate.sql.ast.tree.spi.expression.NamedParameter;
 import org.hibernate.sql.ast.tree.spi.expression.NonStandardFunction;
 import org.hibernate.sql.ast.tree.spi.expression.NullifFunction;
@@ -173,10 +180,10 @@ import org.hibernate.sql.ast.tree.spi.from.FromClause;
 import org.hibernate.sql.ast.tree.spi.from.TableGroup;
 import org.hibernate.sql.ast.tree.spi.from.TableGroupJoin;
 import org.hibernate.sql.ast.tree.spi.from.TableSpace;
+import org.hibernate.sql.ast.tree.spi.group.GroupSpecification;
 import org.hibernate.sql.ast.tree.spi.predicate.BetweenPredicate;
 import org.hibernate.sql.ast.tree.spi.predicate.GroupedPredicate;
 import org.hibernate.sql.ast.tree.spi.predicate.InListPredicate;
-import org.hibernate.sql.ast.tree.spi.predicate.InSubQueryPredicate;
 import org.hibernate.sql.ast.tree.spi.predicate.Junction;
 import org.hibernate.sql.ast.tree.spi.predicate.LikePredicate;
 import org.hibernate.sql.ast.tree.spi.predicate.NegatedPredicate;
@@ -379,6 +386,13 @@ public abstract class BaseSqmToSqlAstConverter
 		return sqlSelection;
 	}
 
+	@Override
+	public GroupSpecification visitGroupSpecification(SqmGroupSpecification groupSpecification) {
+		return new GroupSpecification(
+				toExpression( groupSpecification.getGroupExpression().accept( this ) ),
+				groupSpecification.getCollation()
+		);
+	}
 
 	@Override
 	public Void visitOrderByClause(SqmOrderByClause orderByClause) {
@@ -389,7 +403,7 @@ public abstract class BaseSqmToSqlAstConverter
 	@Override
 	public SortSpecification visitSortSpecification(SqmSortSpecification sortSpecification) {
 		return new SortSpecification(
-				(Expression) sortSpecification.getSortExpression().accept( this ),
+				toExpression( sortSpecification.getSortExpression().accept( this ) ),
 				sortSpecification.getCollation(),
 				sortSpecification.getSortOrder()
 		);
@@ -411,7 +425,7 @@ public abstract class BaseSqmToSqlAstConverter
 			}
 
 			final SqmWhereClause whereClause = querySpec.getWhereClause();
-			if ( whereClause != null ) {
+			if ( whereClause != null && whereClause.getPredicate() != null ) {
 				currentClauseStack.push( Clause.WHERE );
 				try {
 					astQuerySpec.setWhereClauseRestrictions(
@@ -423,8 +437,30 @@ public abstract class BaseSqmToSqlAstConverter
 				}
 			}
 
-			// todo : group-by
-			// todo : having
+			if ( querySpec.getGroupByClause() != null ) {
+				currentClauseStack.push( Clause.GROUP );
+				try {
+					for ( SqmGroupSpecification sortSpecification : querySpec.getGroupByClause().getGroupBySpecifications() ) {
+						astQuerySpec.addGroupSpecification( visitGroupSpecification( sortSpecification ) );
+					}
+				}
+				finally {
+					currentClauseStack.pop();
+				}
+			}
+
+			final SqmHavingClause havingClause = querySpec.getHavingClause();
+			if ( havingClause != null && havingClause.getPredicate() != null ) {
+				currentClauseStack.push( Clause.HAVING );
+				try {
+					astQuerySpec.setHavingClauseRestrictions(
+							(Predicate) havingClause.getPredicate().accept( this )
+					);
+				}
+				finally {
+					currentClauseStack.pop();
+				}
+			}
 
 			if ( querySpec.getOrderByClause() != null ) {
 				currentClauseStack.push( Clause.ORDER );
@@ -444,12 +480,12 @@ public abstract class BaseSqmToSqlAstConverter
 				try {
 					if ( limitOffsetClause.getLimitExpression() != null ) {
 						astQuerySpec.setLimitClauseExpression(
-								(Expression) limitOffsetClause.getLimitExpression().accept( this )
+								toExpression( limitOffsetClause.getLimitExpression().accept( this ) )
 						);
 					}
 					if ( limitOffsetClause.getOffsetExpression() != null ) {
 						astQuerySpec.setOffsetClauseExpression(
-								(Expression) limitOffsetClause.getOffsetExpression().accept( this )
+								toExpression( limitOffsetClause.getOffsetExpression().accept( this ) )
 						);
 					}
 				}
@@ -584,7 +620,7 @@ public abstract class BaseSqmToSqlAstConverter
 
 		final TableGroupJoin tableGroupJoin = joinProducer.createTableGroupJoin(
 				joinedFromElement,
-				joinedFromElement.getJoinType().getCorrespondingSqlJoinType(),
+				joinedFromElement.getSqmJoinType().getCorrespondingSqlJoinType(),
 				new JoinedTableGroupContext() {
 					@Override
 					public TableGroup getLhs() {
@@ -927,6 +963,42 @@ public abstract class BaseSqmToSqlAstConverter
 	}
 
 	@Override
+	public QueryLiteral visitLiteralTimestampExpression(SqmLiteralTimestamp expression) {
+		return new QueryLiteral(
+				expression.getLiteralValue(),
+				resolveType( expression.getExpressableType(), StandardSpiBasicTypes.TIMESTAMP ),
+				getCurrentClauseStack().getCurrent() == Clause.SELECT
+		);
+	}
+
+	@Override
+	public QueryLiteral visitLiteralDateExpression(SqmLiteralDate expression) {
+		return new QueryLiteral(
+				expression.getLiteralValue(),
+				resolveType( expression.getExpressableType(), StandardSpiBasicTypes.DATE ),
+				getCurrentClauseStack().getCurrent() == Clause.SELECT
+		);
+	}
+
+	@Override
+	public QueryLiteral visitLiteralTimeExpression(SqmLiteralTime expression) {
+		return new QueryLiteral(
+				expression.getLiteralValue(),
+				resolveType( expression.getExpressableType(), StandardSpiBasicTypes.TIME ),
+				getCurrentClauseStack().getCurrent() == Clause.SELECT
+		);
+	}
+
+	@Override
+	public Object visitLiteralGenericExpression(SqmLiteralGeneric expression) {
+		return new QueryLiteral(
+				expression.getLiteralValue(),
+				expression.getExpressableType(),
+				getCurrentClauseStack().getCurrent() == Clause.SELECT
+		);
+	}
+
+	@Override
 	public QueryLiteral visitLiteralNullExpression(SqmLiteralNull expression) {
 		return new QueryLiteral(
 				null,
@@ -996,8 +1068,14 @@ public abstract class BaseSqmToSqlAstConverter
 		);
 	}
 
-
-	// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+	@Override
+	public AnonymousParameter visitAnonymousParameterExpression(SqmAnonymousParameter expression) {
+		return new AnonymousParameter(
+				expression,
+				(AllowableParameterType) expression.getExpressableType()
+		);
+	}
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 	// non-standard functions
 
 	@Override
@@ -1022,7 +1100,7 @@ public abstract class BaseSqmToSqlAstConverter
 
 		final ArrayList<Expression> sqlAstArguments = new ArrayList<>();
 		for ( SqmExpression sqmArgument : sqmArguments ) {
-			sqlAstArguments.add( (Expression) sqmArgument.accept( this ) );
+			sqlAstArguments.add( toExpression( sqmArgument.accept( this ) ) );
 		}
 
 		return sqlAstArguments;
@@ -1048,7 +1126,7 @@ public abstract class BaseSqmToSqlAstConverter
 		shallownessStack.push( Shallowness.FUNCTION );
 
 		try {
-			return new AbsFunction( (Expression) function.getArgument().accept( this ) );
+			return new AbsFunction( toExpression( function.getArgument().accept( this ) ) );
 		}
 		finally {
 			shallownessStack.pop();
@@ -1061,7 +1139,7 @@ public abstract class BaseSqmToSqlAstConverter
 
 		try {
 			return new AvgFunction(
-					(Expression) expression.getArgument().accept( this ),
+					toExpression( expression.getArgument().accept( this ) ),
 					expression.isDistinct(),
 					expression.getExpressableType()
 			);
@@ -1077,7 +1155,7 @@ public abstract class BaseSqmToSqlAstConverter
 
 		try {
 			return new BitLengthFunction(
-					(Expression) function.getArgument().accept( this ),
+					toExpression( function.getArgument().accept( this ) ),
 					(BasicValuedExpressableType) function.getExpressableType()
 			);
 		}
@@ -1092,7 +1170,7 @@ public abstract class BaseSqmToSqlAstConverter
 
 		try {
 			return new CastFunction(
-					(Expression) expression.getExpressionToCast().accept( this ),
+					toExpression( expression.getExpressionToCast().accept( this ) ),
 					expression.getExpressableType(),
 					expression.getExplicitSqlCastTarget()
 			);
@@ -1108,7 +1186,7 @@ public abstract class BaseSqmToSqlAstConverter
 
 		try {
 			return new CountFunction(
-					(Expression) expression.getArgument().accept( this ),
+					toExpression( expression.getArgument().accept( this ) ),
 					expression.isDistinct(),
 					expression.getExpressableType()
 			);
@@ -1132,11 +1210,11 @@ public abstract class BaseSqmToSqlAstConverter
 		}
 
 		if ( sqmExpressions.size() == 1 ) {
-			return Collections.singletonList( (Expression) sqmExpressions.get( 0 ).accept( this ) );
+			return Collections.singletonList( toExpression( sqmExpressions.get( 0 ).accept( this ) ) );
 		}
 
 		final List<Expression> results = new ArrayList<>();
-		sqmExpressions.forEach( sqmExpression -> results.add( (Expression) sqmExpression.accept( this ) ) );
+		sqmExpressions.forEach( sqmExpression -> results.add( toExpression( sqmExpression.accept( this ) ) ) );
 		return results;
 	}
 
@@ -1161,8 +1239,8 @@ public abstract class BaseSqmToSqlAstConverter
 
 		try {
 			return new ExtractFunction(
-					(Expression) function.getUnitToExtract().accept( this ),
-					(Expression) function.getExtractionSource().accept( this ),
+					toExpression( function.getUnitToExtract().accept( this ) ),
+					toExpression( function.getExtractionSource().accept( this ) ),
 					(BasicValuedExpressableType) function.getExpressableType()
 			);
 		}
@@ -1192,7 +1270,7 @@ public abstract class BaseSqmToSqlAstConverter
 
 		try {
 			return new LengthFunction(
-					(Expression) function.getArgument().accept( this ),
+					toExpression( function.getArgument().accept( this ) ),
 					function.getExpressableType()
 			);
 		}
@@ -1207,11 +1285,11 @@ public abstract class BaseSqmToSqlAstConverter
 
 		try {
 			return new LocateFunction(
-					(Expression) function.getPatternString().accept( this ),
-					(Expression) function.getStringToSearch().accept( this ),
+					toExpression( function.getPatternString().accept( this ) ),
+					toExpression( function.getStringToSearch().accept( this ) ),
 					function.getStartPosition() == null
 							? null
-							: (Expression) function.getStartPosition().accept( this )
+							: toExpression( function.getStartPosition().accept( this ) )
 			);
 		}
 		finally {
@@ -1225,7 +1303,7 @@ public abstract class BaseSqmToSqlAstConverter
 
 		try {
 			return new LowerFunction(
-					(Expression) function.getArgument().accept( this ),
+					toExpression( function.getArgument().accept( this ) ),
 					(BasicValuedExpressableType) function.getExpressableType()
 			);
 		}
@@ -1240,7 +1318,7 @@ public abstract class BaseSqmToSqlAstConverter
 
 		try {
 			return new MaxFunction(
-					(Expression) expression.getArgument().accept( this ),
+					toExpression( expression.getArgument().accept( this ) ),
 					expression.isDistinct(),
 					expression.getExpressableType()
 			);
@@ -1256,7 +1334,7 @@ public abstract class BaseSqmToSqlAstConverter
 
 		try {
 			return new MinFunction(
-					(Expression) expression.getArgument().accept( this ),
+					toExpression( expression.getArgument().accept( this ) ),
 					expression.isDistinct(),
 					expression.getExpressableType()
 			);
@@ -1270,8 +1348,8 @@ public abstract class BaseSqmToSqlAstConverter
 	public Object visitModFunction(SqmModFunction function) {
 		shallownessStack.push( Shallowness.FUNCTION );
 
-		final Expression dividend = (Expression) function.getDividend().accept( this );
-		final Expression divisor = (Expression) function.getDivisor().accept( this );
+		final Expression dividend = toExpression( function.getDividend().accept( this ) );
+		final Expression divisor = toExpression( function.getDivisor().accept( this ) );
 		try {
 			return new ModFunction(
 					dividend,
@@ -1290,7 +1368,7 @@ public abstract class BaseSqmToSqlAstConverter
 
 		try {
 			return new SumFunction(
-					(Expression) expression.getArgument().accept( this ),
+					toExpression( expression.getArgument().accept( this ) ),
 					expression.isDistinct(),
 					expression.getExpressableType()
 			);
@@ -1307,7 +1385,7 @@ public abstract class BaseSqmToSqlAstConverter
 		try {
 			return new UnaryOperation(
 					interpret( expression.getOperation() ),
-					(Expression) expression.getOperand().accept( this ),
+					toExpression( expression.getOperand().accept( this ) ),
 					expression.getExpressableType()
 			);
 		}
@@ -1338,14 +1416,14 @@ public abstract class BaseSqmToSqlAstConverter
 				return new NonStandardFunction(
 						"mod",
 						null, //(BasicType) extractOrmType( expression.getExpressableType() ),
-						(Expression) expression.getLeftHandOperand().accept( this ),
-						(Expression) expression.getRightHandOperand().accept( this )
+						toExpression( expression.getLeftHandOperand().accept( this ) ),
+						toExpression( expression.getRightHandOperand().accept( this ) )
 				);
 			}
 			return new BinaryArithmeticExpression(
 					interpret( expression.getOperation() ),
-					(Expression) expression.getLeftHandOperand().accept( this ),
-					(Expression) expression.getRightHandOperand().accept( this ),
+					toExpression( expression.getLeftHandOperand().accept( this ) ),
+					toExpression( expression.getRightHandOperand().accept( this ) ),
 					(BasicValuedExpressableType) expression.getExpressableType()
 			);
 		}
@@ -1380,7 +1458,7 @@ public abstract class BaseSqmToSqlAstConverter
 	public CoalesceFunction visitCoalesceFunction(SqmCoalesceFunction expression) {
 		final CoalesceFunction result = new CoalesceFunction();
 		for ( SqmExpression value : expression.getArguments() ) {
-			result.value( (Expression) value.accept( this ) );
+			result.value( toExpression( value.accept( this ) ) );
 		}
 
 		return result;
@@ -1390,17 +1468,17 @@ public abstract class BaseSqmToSqlAstConverter
 	public CaseSimpleExpression visitSimpleCaseExpression(SqmCaseSimple expression) {
 		final CaseSimpleExpression result = new CaseSimpleExpression(
 				expression.getExpressableType(),
-				(Expression) expression.getFixture().accept( this )
+				toExpression( expression.getFixture().accept( this ) )
 		);
 
 		for ( SqmCaseSimple.WhenFragment whenFragment : expression.getWhenFragments() ) {
 			result.when(
-					(Expression) whenFragment.getCheckValue().accept( this ),
-					(Expression) whenFragment.getResult().accept( this )
+					toExpression( whenFragment.getCheckValue().accept( this ) ),
+					toExpression( whenFragment.getResult().accept( this ) )
 			);
 		}
 
-		result.otherwise( (Expression) expression.getOtherwise().accept( this ) );
+		result.otherwise( toExpression( expression.getOtherwise().accept( this ) ) );
 
 		return result;
 	}
@@ -1412,11 +1490,11 @@ public abstract class BaseSqmToSqlAstConverter
 		for ( SqmCaseSearched.WhenFragment whenFragment : expression.getWhenFragments() ) {
 			result.when(
 					(Predicate) whenFragment.getPredicate().accept( this ),
-					(Expression) whenFragment.getResult().accept( this )
+					toExpression( whenFragment.getResult().accept( this ) )
 			);
 		}
 
-		result.otherwise( (Expression) expression.getOtherwise().accept( this ) );
+		result.otherwise( toExpression( expression.getOtherwise().accept( this ) ) );
 
 		return result;
 	}
@@ -1424,8 +1502,8 @@ public abstract class BaseSqmToSqlAstConverter
 	@Override
 	public NullifFunction visitNullifFunction(SqmNullifFunction expression) {
 		return new NullifFunction(
-				(Expression) expression.getFirstArgument().accept( this ),
-				(Expression) expression.getSecondArgument().accept( this ),
+				toExpression( expression.getFirstArgument().accept( this ) ),
+				toExpression( expression.getSecondArgument().accept( this ) ),
 				expression.getExpressableType()
 		);
 	}
@@ -1434,15 +1512,15 @@ public abstract class BaseSqmToSqlAstConverter
 	public Object visitTrimFunction(SqmTrimFunction expression) {
 		return new TrimFunction(
 				expression.getSpecification(),
-				(Expression) expression.getTrimCharacter().accept( this ),
-				(Expression) expression.getSource().accept( this )
+				toExpression( expression.getTrimCharacter().accept( this ) ),
+				toExpression( expression.getSource().accept( this ) )
 		);
 	}
 
 	@Override
 	public Object visitUpperFunction(SqmUpperFunction sqmFunction) {
 		return new UpperFunction(
-				(Expression) sqmFunction.getArgument().accept( this ),
+				toExpression( sqmFunction.getArgument().accept( this ) ),
 				(BasicValuedExpressableType) sqmFunction.getExpressableType()
 		);
 
@@ -1452,8 +1530,8 @@ public abstract class BaseSqmToSqlAstConverter
 	public ConcatFunction visitConcatExpression(SqmConcat expression) {
 		return new ConcatFunction(
 				Arrays.asList(
-						(Expression)expression.getLeftHandOperand().accept( this ),
-						(Expression) expression.getRightHandOperand().accept( this )
+						toExpression( expression.getLeftHandOperand().accept( this ) ),
+						toExpression( expression.getRightHandOperand().accept( this ) )
 				),
 				expression.getExpressableType()
 		);
@@ -1524,7 +1602,7 @@ public abstract class BaseSqmToSqlAstConverter
 		final Expression rhs = toExpression( predicate.getRightHandExpression().accept( this ) );
 
 		return new RelationalPredicate(
-				interpret( predicate.getOperator() ),
+				interpret( predicate.getRelationalOperator() ),
 				lhs,
 				rhs
 		);
@@ -1578,9 +1656,9 @@ public abstract class BaseSqmToSqlAstConverter
 	@Override
 	public BetweenPredicate visitBetweenPredicate(BetweenSqmPredicate predicate) {
 		return new BetweenPredicate(
-				(Expression) predicate.getExpression().accept( this ),
-				(Expression) predicate.getLowerBound().accept( this ),
-				(Expression) predicate.getUpperBound().accept( this ),
+				toExpression( predicate.getExpression().accept( this ) ),
+				toExpression( predicate.getLowerBound().accept( this ) ),
+				toExpression( predicate.getUpperBound().accept( this ) ),
 				predicate.isNegated()
 		);
 	}
@@ -1589,11 +1667,11 @@ public abstract class BaseSqmToSqlAstConverter
 	public LikePredicate visitLikePredicate(LikeSqmPredicate predicate) {
 		final Expression escapeExpression = predicate.getEscapeCharacter() == null
 				? null
-				: (Expression) predicate.getEscapeCharacter().accept( this );
+				: toExpression( predicate.getEscapeCharacter().accept( this ) );
 
 		return new LikePredicate(
-				(Expression) predicate.getMatchExpression().accept( this ),
-				(Expression) predicate.getPattern().accept( this ),
+				toExpression( predicate.getMatchExpression().accept( this ) ),
+				toExpression( predicate.getPattern().accept( this ) ),
 				escapeExpression,
 				predicate.isNegated()
 		);
@@ -1602,7 +1680,7 @@ public abstract class BaseSqmToSqlAstConverter
 	@Override
 	public NullnessPredicate visitIsNullPredicate(NullnessSqmPredicate predicate) {
 		return new NullnessPredicate(
-				(Expression) predicate.getExpression().accept( this ),
+				toExpression( predicate.getExpression().accept( this ) ),
 				predicate.isNegated()
 		);
 	}
@@ -1610,21 +1688,12 @@ public abstract class BaseSqmToSqlAstConverter
 	@Override
 	public InListPredicate visitInListPredicate(InListSqmPredicate predicate) {
 		final InListPredicate inPredicate = new InListPredicate(
-				(Expression) predicate.getTestExpression().accept( this ),
+				toExpression( predicate.getTestExpression().accept( this ) ),
 				predicate.isNegated()
 		);
 		for ( SqmExpression expression : predicate.getListExpressions() ) {
-			inPredicate.addExpression( (Expression) expression.accept( this ) );
+			inPredicate.addExpression( toExpression( expression.accept( this ) ) );
 		}
 		return inPredicate;
-	}
-
-	@Override
-	public InSubQueryPredicate visitInSubQueryPredicate(InSubQuerySqmPredicate predicate) {
-		return new InSubQueryPredicate(
-				(Expression) predicate.getTestExpression().accept( this ),
-				(QuerySpec) predicate.getSubQueryExpression().accept( this ),
-				predicate.isNegated()
-		);
 	}
 }

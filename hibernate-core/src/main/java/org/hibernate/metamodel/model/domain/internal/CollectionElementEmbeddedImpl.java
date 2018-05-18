@@ -80,7 +80,7 @@ public class CollectionElementEmbeddedImpl<J>
 			SqmFrom sourceSqmFrom,
 			SqmNavigableContainerReference containerReference,
 			SqmCreationContext creationContext) {
-		return new SqmCollectionElementReferenceEmbedded( (SqmPluralAttributeReference) containerReference );
+		return new SqmCollectionElementReferenceEmbedded( (SqmPluralAttributeReference) containerReference, creationContext );
 	}
 
 	@Override

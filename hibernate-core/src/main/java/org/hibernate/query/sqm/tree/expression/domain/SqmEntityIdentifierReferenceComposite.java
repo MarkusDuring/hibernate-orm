@@ -12,6 +12,7 @@ import org.hibernate.query.NavigablePath;
 import org.hibernate.query.sqm.consume.spi.SemanticQueryWalker;
 import org.hibernate.query.sqm.produce.path.spi.SemanticPathPart;
 import org.hibernate.query.sqm.produce.spi.SqmCreationContext;
+import org.hibernate.query.sqm.tree.SqmCopyContext;
 import org.hibernate.query.sqm.tree.expression.SqmExpression;
 import org.hibernate.query.sqm.tree.from.SqmFrom;
 import org.hibernate.sql.ast.produce.metamodel.spi.NavigableContainerReferenceInfo;
@@ -27,9 +28,19 @@ public class SqmEntityIdentifierReferenceComposite
 	private final SqmEntityTypedReference sourceBinding;
 	private final EntityIdentifierComposite navigable;
 
-	public SqmEntityIdentifierReferenceComposite(SqmEntityTypedReference sourceBinding, EntityIdentifierComposite navigable) {
+	public SqmEntityIdentifierReferenceComposite(SqmEntityTypedReference sourceBinding, EntityIdentifierComposite navigable, SqmCreationContext creationContext) {
+		super( creationContext );
 		this.sourceBinding = sourceBinding;
 		this.navigable = navigable;
+	}
+
+	@Override
+	public SqmEntityIdentifierReferenceComposite copy(SqmCopyContext context) {
+		return new SqmEntityIdentifierReferenceComposite(
+				sourceBinding.copy( context ),
+				navigable,
+				context.getCreationContext()
+		);
 	}
 
 	@Override

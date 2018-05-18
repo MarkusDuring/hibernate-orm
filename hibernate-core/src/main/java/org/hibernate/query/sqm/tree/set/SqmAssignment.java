@@ -6,6 +6,7 @@
  */
 package org.hibernate.query.sqm.tree.set;
 
+import org.hibernate.query.sqm.tree.SqmCopyContext;
 import org.hibernate.query.sqm.tree.expression.domain.SqmSingularAttributeReference;
 import org.hibernate.query.sqm.tree.expression.SqmExpression;
 
@@ -27,5 +28,12 @@ public class SqmAssignment {
 
 	public SqmExpression getValue() {
 		return value;
+	}
+
+	public SqmAssignment copy(SqmCopyContext context) {
+		return new SqmAssignment(
+				stateField.copy( context ),
+				value.copy( context )
+		);
 	}
 }

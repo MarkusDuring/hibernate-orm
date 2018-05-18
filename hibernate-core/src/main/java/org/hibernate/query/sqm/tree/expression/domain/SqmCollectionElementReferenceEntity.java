@@ -8,8 +8,9 @@ package org.hibernate.query.sqm.tree.expression.domain;
 
 import org.hibernate.metamodel.model.domain.spi.CollectionElementEntity;
 import org.hibernate.metamodel.model.domain.spi.EntityDescriptor;
+import org.hibernate.query.sqm.produce.spi.SqmCreationContext;
+import org.hibernate.query.sqm.tree.SqmCopyContext;
 import org.hibernate.query.sqm.tree.from.SqmFrom;
-
 import org.jboss.logging.Logger;
 
 /**
@@ -22,8 +23,16 @@ public class SqmCollectionElementReferenceEntity
 
 	private SqmFrom exportedFromElement;
 
-	public SqmCollectionElementReferenceEntity(SqmPluralAttributeReference pluralAttributeBinding) {
-		super( pluralAttributeBinding );
+	public SqmCollectionElementReferenceEntity(SqmPluralAttributeReference pluralAttributeBinding, SqmCreationContext creationContext) {
+		super( pluralAttributeBinding, creationContext );
+	}
+
+	@Override
+	public SqmCollectionElementReferenceEntity copy(SqmCopyContext context) {
+		return new SqmCollectionElementReferenceEntity(
+				getPluralAttributeReference().copy( context ),
+				context.getCreationContext()
+		);
 	}
 
 	@Override

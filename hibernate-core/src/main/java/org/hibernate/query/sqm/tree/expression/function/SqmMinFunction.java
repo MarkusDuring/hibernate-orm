@@ -6,8 +6,10 @@
  */
 package org.hibernate.query.sqm.tree.expression.function;
 
+import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.metamodel.model.domain.spi.AllowableFunctionReturnType;
 import org.hibernate.query.sqm.consume.spi.SemanticQueryWalker;
+import org.hibernate.query.sqm.tree.SqmCopyContext;
 import org.hibernate.query.sqm.tree.expression.SqmExpression;
 
 /**
@@ -18,12 +20,26 @@ public class SqmMinFunction
 		implements SqmAggregateFunction {
 	public static final String NAME = "min";
 
-	public SqmMinFunction(SqmExpression argument) {
-		super( argument, (AllowableFunctionReturnType) argument.getExpressableType() );
+	public SqmMinFunction(SessionFactoryImplementor sessionFactory, SqmExpression argument) {
+		super( sessionFactory, argument, (AllowableFunctionReturnType) argument.getExpressableType() );
 	}
 
-	public SqmMinFunction(SqmExpression argument, AllowableFunctionReturnType resultType) {
-		super( argument, resultType );
+	public SqmMinFunction(SessionFactoryImplementor sessionFactory, SqmExpression argument, AllowableFunctionReturnType resultType) {
+		super( sessionFactory, argument, resultType );
+	}
+
+	public SqmMinFunction(SessionFactoryImplementor sessionFactory, SqmExpression argument, AllowableFunctionReturnType resultType, boolean distinct) {
+		super( sessionFactory, argument, resultType, distinct );
+	}
+
+	@Override
+	public SqmMinFunction copy(SqmCopyContext context) {
+		return new SqmMinFunction(
+				getSessionFactory(),
+				getArgument().copy( context ),
+				getExpressableType(),
+				isDistinct()
+		);
 	}
 
 	@Override

@@ -8,6 +8,7 @@ package org.hibernate.query.sqm.produce.function.spi;
 
 import java.util.List;
 
+import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.metamodel.model.domain.spi.AllowableFunctionReturnType;
 import org.hibernate.query.sqm.produce.function.SqmFunctionTemplate;
 import org.hibernate.query.sqm.tree.expression.SqmExpression;
@@ -23,10 +24,12 @@ import org.hibernate.query.sqm.tree.expression.function.SqmFunction;
 public class CastFunctionTemplate implements SqmFunctionTemplate {
 	@Override
 	public SqmFunction makeSqmFunctionExpression(
+            SessionFactoryImplementor sessionFactory,
 			List<SqmExpression> arguments,
 			AllowableFunctionReturnType impliedResultType) {
 		assert arguments.size() == 1;
 		return new SqmCastFunction(
+				sessionFactory,
 				arguments.get( 0 ),
 				impliedResultType
 		);

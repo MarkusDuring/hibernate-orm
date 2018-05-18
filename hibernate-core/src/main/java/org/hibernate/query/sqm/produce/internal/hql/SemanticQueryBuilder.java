@@ -8,6 +8,9 @@ package org.hibernate.query.sqm.produce.internal.hql;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.sql.Date;
+import java.sql.Time;
+import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -18,7 +21,6 @@ import java.util.Map;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
-import org.hibernate.HibernateException;
 import org.hibernate.NotYetImplementedFor6Exception;
 import org.hibernate.boot.registry.classloading.spi.ClassLoaderService;
 import org.hibernate.boot.registry.classloading.spi.ClassLoadingException;
@@ -88,6 +90,9 @@ import org.hibernate.query.sqm.tree.expression.SqmLiteralString;
 import org.hibernate.query.sqm.tree.expression.SqmLiteralTime;
 import org.hibernate.query.sqm.tree.expression.SqmLiteralTimestamp;
 import org.hibernate.query.sqm.tree.expression.SqmLiteralTrue;
+import org.hibernate.query.sqm.tree.expression.SqmLiteralTimestamp;
+import org.hibernate.query.sqm.tree.expression.SqmLiteralTime;
+import org.hibernate.query.sqm.tree.expression.SqmLiteralDate;
 import org.hibernate.query.sqm.tree.expression.SqmNamedParameter;
 import org.hibernate.query.sqm.tree.expression.SqmParameter;
 import org.hibernate.query.sqm.tree.expression.SqmParameterizedEntityType;
@@ -148,6 +153,8 @@ import org.hibernate.query.sqm.tree.from.SqmFromExporter;
 import org.hibernate.query.sqm.tree.from.SqmNavigableJoin;
 import org.hibernate.query.sqm.tree.from.SqmQualifiedJoin;
 import org.hibernate.query.sqm.tree.from.SqmRoot;
+import org.hibernate.query.sqm.tree.group.SqmGroupByClause;
+import org.hibernate.query.sqm.tree.group.SqmGroupSpecification;
 import org.hibernate.query.sqm.tree.internal.ParameterCollector;
 import org.hibernate.query.sqm.tree.internal.SqmDeleteStatementImpl;
 import org.hibernate.query.sqm.tree.internal.SqmInsertSelectStatementImpl;
@@ -157,30 +164,13 @@ import org.hibernate.query.sqm.tree.order.SqmOrderByClause;
 import org.hibernate.query.sqm.tree.order.SqmSortOrder;
 import org.hibernate.query.sqm.tree.order.SqmSortSpecification;
 import org.hibernate.query.sqm.tree.paging.SqmLimitOffsetClause;
-import org.hibernate.query.sqm.tree.predicate.AndSqmPredicate;
-import org.hibernate.query.sqm.tree.predicate.BetweenSqmPredicate;
-import org.hibernate.query.sqm.tree.predicate.EmptinessSqmPredicate;
-import org.hibernate.query.sqm.tree.predicate.GroupedSqmPredicate;
-import org.hibernate.query.sqm.tree.predicate.InListSqmPredicate;
-import org.hibernate.query.sqm.tree.predicate.InSubQuerySqmPredicate;
-import org.hibernate.query.sqm.tree.predicate.LikeSqmPredicate;
-import org.hibernate.query.sqm.tree.predicate.MemberOfSqmPredicate;
-import org.hibernate.query.sqm.tree.predicate.NegatableSqmPredicate;
-import org.hibernate.query.sqm.tree.predicate.NegatedSqmPredicate;
-import org.hibernate.query.sqm.tree.predicate.NullnessSqmPredicate;
-import org.hibernate.query.sqm.tree.predicate.OrSqmPredicate;
-import org.hibernate.query.sqm.tree.predicate.RelationalPredicateOperator;
-import org.hibernate.query.sqm.tree.predicate.RelationalSqmPredicate;
-import org.hibernate.query.sqm.tree.predicate.SqmPredicate;
-import org.hibernate.query.sqm.tree.predicate.SqmWhereClause;
+import org.hibernate.query.sqm.tree.predicate.*;
 import org.hibernate.query.sqm.tree.select.SqmDynamicInstantiation;
-import org.hibernate.query.sqm.tree.select.SqmDynamicInstantiationArgument;
 import org.hibernate.query.sqm.tree.select.SqmSelectClause;
 import org.hibernate.query.sqm.tree.select.SqmSelectableNode;
-import org.hibernate.query.sqm.tree.select.SqmSelection;
+import org.hibernate.query.sqm.tree.select.SqmSelectionBase;
 import org.hibernate.sql.ast.produce.metamodel.spi.BasicValuedExpressableType;
 import org.hibernate.sql.ast.produce.metamodel.spi.EntityValuedExpressableType;
-import org.hibernate.sql.ast.produce.metamodel.spi.ExpressableType;
 import org.hibernate.sql.ast.produce.metamodel.spi.PolymorphicEntityValuedExpressableType;
 import org.hibernate.sql.ast.tree.spi.TrimSpecification;
 import org.hibernate.type.descriptor.java.spi.BasicJavaDescriptor;
@@ -189,6 +179,8 @@ import org.hibernate.type.descriptor.java.spi.JavaTypeDescriptor;
 import org.jboss.logging.Logger;
 
 import org.antlr.v4.runtime.Token;
+
+import javax.persistence.criteria.CommonAbstractCriteria;
 
 /**
  * @author Steve Ebersole
@@ -223,6 +215,7 @@ public class SemanticQueryBuilder
 	private final Stack<TreatHandler> treatHandlerStack = new StandardStack<>( new TreatHandlerNormal() );
 
 	private SqmFromElementSpace currentFromElementSpace;
+	private CommonAbstractCriteria containingQuery;
 
 	private Map<NavigablePath,SqmNavigableReference> navigableReferenceByPath;
 
@@ -304,6 +297,21 @@ public class SemanticQueryBuilder
 	}
 
 	@Override
+	public void setCurrentFromElementBuilder(SqmFromBuilder fromBuilder) {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public CommonAbstractCriteria getCurrentContainingQuery() {
+		return containingQuery;
+	}
+
+	@Override
+	public void setCurrentContainingQuery(CommonAbstractCriteria currentContainingQuery) {
+		this.containingQuery = currentContainingQuery;
+	}
+
+	@Override
 	public QuerySpecProcessingState getCurrentQuerySpecProcessingState() {
 		return querySpecProcessingStateStack.getCurrent();
 	}
@@ -366,7 +374,10 @@ public class SemanticQueryBuilder
 			}
 		}
 
-		final SqmSelectStatementImpl selectStatement = new SqmSelectStatementImpl();
+		final SqmSelectStatementImpl selectStatement = new SqmSelectStatementImpl(
+				this,
+				Object.class
+		);
 		parameterCollector = selectStatement;
 
 		try {
@@ -423,6 +434,20 @@ public class SemanticQueryBuilder
 				whereClause = null;
 			}
 
+			final SqmGroupByClause groupByClause;
+			if ( ctx.groupByClause() != null ) {
+				groupByClause = visitGroupByClause( ctx.groupByClause() );
+			} else {
+				groupByClause = null;
+			}
+
+			final SqmHavingClause havingClause;
+			if ( ctx.havingClause() != null ) {
+				havingClause = visitHavingClause( ctx.havingClause() );
+			} else {
+				havingClause = null;
+			}
+
 			final SqmOrderByClause orderByClause;
 			if ( ctx.orderByClause() != null ) {
 				if ( getSessionFactory().getSessionFactoryOptions().isStrictJpaQueryLanguageCompliance()
@@ -473,7 +498,7 @@ public class SemanticQueryBuilder
 				limitOffsetClause = null;
 			}
 
-			return new SqmQuerySpec( querySpecProcessingStateStack.getCurrent().getFromClause(), selectClause, whereClause, orderByClause, limitOffsetClause );
+			return new SqmQuerySpec( querySpecProcessingStateStack.getCurrent().getFromClause(), selectClause, whereClause, groupByClause, havingClause, orderByClause, limitOffsetClause );
 		}
 		finally {
 			querySpecProcessingStateStack.pop();
@@ -485,9 +510,9 @@ public class SemanticQueryBuilder
 		// for now, this is slightly different than the legacy behavior where
 		// the root and each non-fetched-join was selected.  For now, here, we simply
 		// select the root
-		final SqmSelectClause selectClause = new SqmSelectClause( false );
 		final SqmFrom root = fromClause.getFromElementSpaces().get( 0 ).getRoot();
-		selectClause.addSelection( new SqmSelection( root.getNavigableReference() ) );
+		final SqmSelectClause selectClause = new SqmSelectClause( false, root.getJavaTypeDescriptor().getJavaType() );
+		selectClause.addSelection( (SqmSelectionBase) root.getNavigableReference() );
 		return selectClause;
 	}
 
@@ -508,34 +533,34 @@ public class SemanticQueryBuilder
 	}
 
 	@Override
-	public SqmSelection visitSelection(HqlParser.SelectionContext ctx) {
+	public SqmSelectionBase visitSelection(HqlParser.SelectionContext ctx) {
 		final String resultIdentifier = interpretResultIdentifier( ctx.resultIdentifier() );
-		SqmSelectableNode selectableNode = visitSelectableNode( ctx );
+		SqmSelectionBase selection = (SqmSelectionBase) visitSelectableNode( ctx );
 
-		if ( selectableNode instanceof SqmPluralAttributeReference ) {
-			final SqmPluralAttributeReference pluralAttributeBinding = (SqmPluralAttributeReference) selectableNode;
+		if ( selection instanceof SqmPluralAttributeReference ) {
+			final SqmPluralAttributeReference pluralAttributeBinding = (SqmPluralAttributeReference) selection;
 			final CollectionElement elementReference = pluralAttributeBinding.getReferencedNavigable().getPersistentCollectionDescriptor().getElementDescriptor();
 			switch ( elementReference.getClassification() ) {
 				case ANY: {
 					throw new NotYetImplementedException(  );
 				}
 				case BASIC: {
-					selectableNode = new SqmCollectionElementReferenceBasic( pluralAttributeBinding );
+					selection = new SqmCollectionElementReferenceBasic( pluralAttributeBinding, this );
 					break;
 				}
 				case EMBEDDABLE: {
-					selectableNode = new SqmCollectionElementReferenceEmbedded( pluralAttributeBinding );
+					selection = new SqmCollectionElementReferenceEmbedded( pluralAttributeBinding, this );
 					break;
 				}
 				case ONE_TO_MANY:
 				case MANY_TO_MANY: {
-					selectableNode = new SqmCollectionElementReferenceEntity( pluralAttributeBinding );
+					selection = new SqmCollectionElementReferenceEntity( pluralAttributeBinding, this );
 					break;
 				}
 			}
 		}
 
-		final SqmSelection selection = new SqmSelection( selectableNode, resultIdentifier );
+		selection.alias( resultIdentifier );
 		querySpecProcessingStateStack.getCurrent().getAliasRegistry().registerAlias( selection );
 		return selection;
 	}
@@ -643,20 +668,21 @@ public class SemanticQueryBuilder
 	}
 
 	@Override
-	public SqmDynamicInstantiationArgument visitDynamicInstantiationArg(HqlParser.DynamicInstantiationArgContext ctx) {
-		return new SqmDynamicInstantiationArgument(
-				visitDynamicInstantiationArgExpression( ctx.dynamicInstantiationArgExpression() ),
-				ctx.identifier() == null ? null : ctx.identifier().getText()
-		);
+	public SqmSelectionBase visitDynamicInstantiationArg(HqlParser.DynamicInstantiationArgContext ctx) {
+		SqmSelectionBase sqmSelectableNode = visitDynamicInstantiationArgExpression( ctx.dynamicInstantiationArgExpression() );
+		if ( ctx.identifier() != null ) {
+			sqmSelectableNode.alias( ctx.identifier().getText() );
+		}
+		return sqmSelectableNode;
 	}
 
 	@Override
-	public SqmSelectableNode visitDynamicInstantiationArgExpression(HqlParser.DynamicInstantiationArgExpressionContext ctx) {
+	public SqmSelectionBase visitDynamicInstantiationArgExpression(HqlParser.DynamicInstantiationArgExpressionContext ctx) {
 		if ( ctx.dynamicInstantiation() != null ) {
 			return visitDynamicInstantiation( ctx.dynamicInstantiation() );
 		}
 		else if ( ctx.expression() != null ) {
-			return (SqmExpression) ctx.expression().accept( this );
+			return (SqmSelectionBase) ctx.expression().accept( this );
 		}
 
 		throw new ParsingException( "Unexpected dynamic-instantiation-argument rule type : " + ctx.getText() );
@@ -673,18 +699,35 @@ public class SemanticQueryBuilder
 	}
 
 	@Override
-	public Object visitGroupByClause(HqlParser.GroupByClauseContext ctx) {
-		return super.visitGroupByClause( ctx );
+	public SqmGroupByClause visitGroupByClause(HqlParser.GroupByClauseContext ctx) {
+		final SqmGroupByClause groupByClause = new SqmGroupByClause();
+		for ( HqlParser.GroupingValueContext groupingValueContext : ctx.groupingSpecification().groupingValue() ) {
+			groupByClause.addGroupBySpecification( visitGroupingValue( groupingValueContext ) );
+		}
+		return groupByClause;
 	}
 
 	@Override
-	public Object visitHavingClause(HqlParser.HavingClauseContext ctx) {
-		return super.visitHavingClause( ctx );
+	public SqmGroupSpecification visitGroupingValue(HqlParser.GroupingValueContext ctx) {
+		final SqmExpression groupExpression = (SqmExpression) ctx.expression().accept( this );
+		final String collation;
+		if ( ctx.collationSpecification() != null && ctx.collationSpecification().collateName() != null ) {
+			collation = ctx.collationSpecification().collateName().dotIdentifierSequence().getText();
+		}
+		else {
+			collation = null;
+		}
+		return new SqmGroupSpecification( groupExpression, collation );
+	}
+
+	@Override
+	public SqmHavingClause visitHavingClause(HqlParser.HavingClauseContext ctx) {
+		return new SqmHavingClause( (SqmPredicate) ctx.predicate().accept( this ) );
 	}
 
 	@Override
 	public GroupedSqmPredicate visitGroupedPredicate(HqlParser.GroupedPredicateContext ctx) {
-		return new GroupedSqmPredicate( (SqmPredicate) ctx.predicate().accept( this ) );
+		return new GroupedSqmPredicate( sessionFactory, (SqmPredicate) ctx.predicate().accept( this ) );
 	}
 
 	@Override
@@ -770,7 +813,7 @@ public class SemanticQueryBuilder
 		querySpecProcessingStateStack.push( new QuerySpecProcessingStateDmlImpl( this ) );
 		try {
 			final SqmRoot root = resolveDmlRootEntityReference( ctx.mainEntityPersisterReference() );
-			final SqmDeleteStatementImpl deleteStatement = new SqmDeleteStatementImpl( root );
+			final SqmDeleteStatementImpl deleteStatement = new SqmDeleteStatementImpl( this, root );
 
 			parameterCollector = deleteStatement;
 
@@ -810,7 +853,7 @@ public class SemanticQueryBuilder
 			);
 		}
 		final SqmRoot root = new SqmRoot( null, generateUniqueIdentifier(), alias, entityReference, this );
-		querySpecProcessingStateStack.getCurrent().getAliasRegistry().registerAlias( root );
+		querySpecProcessingStateStack.getCurrent().getAliasRegistry().registerAlias( (SqmFrom) root );
 		querySpecProcessingStateStack.getCurrent().getFromClause().getFromElementSpaces().get( 0 ).setRoot( root );
 		return root;
 	}
@@ -850,7 +893,7 @@ public class SemanticQueryBuilder
 		querySpecProcessingStateStack.push( new QuerySpecProcessingStateDmlImpl( this ) );
 		try {
 			final SqmRoot root = resolveDmlRootEntityReference( ctx.mainEntityPersisterReference() );
-			final SqmUpdateStatementImpl updateStatement = new SqmUpdateStatementImpl( root );
+			final SqmUpdateStatementImpl updateStatement = new SqmUpdateStatementImpl( this, root );
 
 			parameterCollector = updateStatement;
 			try {
@@ -897,11 +940,11 @@ public class SemanticQueryBuilder
 			);
 
 			SqmRoot root = new SqmRoot( null, generateUniqueIdentifier(), alias, entityReference, this );
-			querySpecProcessingStateStack.getCurrent().getAliasRegistry().registerAlias( root );
+			querySpecProcessingStateStack.getCurrent().getAliasRegistry().registerAlias( (SqmFrom) root );
 			querySpecProcessingStateStack.getCurrent().getFromClause().getFromElementSpaces().get( 0 ).setRoot( root );
 
 			// for now we only support the INSERT-SELECT form
-			final SqmInsertSelectStatementImpl insertStatement = new SqmInsertSelectStatementImpl( root );
+			final SqmInsertSelectStatementImpl insertStatement = new SqmInsertSelectStatementImpl( this, root );
 			parameterCollector = insertStatement;
 
 			try {
@@ -1157,6 +1200,7 @@ public class SemanticQueryBuilder
 	@Override
 	public SqmPredicate visitAndPredicate(HqlParser.AndPredicateContext ctx) {
 		return new AndSqmPredicate(
+				sessionFactory,
 				(SqmPredicate) ctx.predicate( 0 ).accept( this ),
 				(SqmPredicate) ctx.predicate( 1 ).accept( this )
 		);
@@ -1165,6 +1209,7 @@ public class SemanticQueryBuilder
 	@Override
 	public SqmPredicate visitOrPredicate(HqlParser.OrPredicateContext ctx) {
 		return new OrSqmPredicate(
+				sessionFactory,
 				(SqmPredicate) ctx.predicate( 0 ).accept( this ),
 				(SqmPredicate) ctx.predicate( 1 ).accept( this )
 		);
@@ -1178,13 +1223,14 @@ public class SemanticQueryBuilder
 			return predicate;
 		}
 		else {
-			return new NegatedSqmPredicate( predicate );
+			return new NegatedSqmPredicate( sessionFactory, predicate );
 		}
 	}
 
 	@Override
 	public NullnessSqmPredicate visitIsNullPredicate(HqlParser.IsNullPredicateContext ctx) {
 		return new NullnessSqmPredicate(
+				sessionFactory,
 				(SqmExpression) ctx.expression().accept( this ),
 				ctx.NOT() != null
 		);
@@ -1193,6 +1239,7 @@ public class SemanticQueryBuilder
 	@Override
 	public EmptinessSqmPredicate visitIsEmptyPredicate(HqlParser.IsEmptyPredicateContext ctx) {
 		return new EmptinessSqmPredicate(
+				sessionFactory,
 				(SqmPluralAttributeReference) ctx.expression().accept( this ),
 				ctx.NOT() != null
 		);
@@ -1215,7 +1262,7 @@ public class SemanticQueryBuilder
 			}
 		}
 
-		return new RelationalSqmPredicate( RelationalPredicateOperator.EQUAL, lhs, rhs );
+		return new RelationalSqmPredicate( sessionFactory, RelationalPredicateOperator.EQUAL, lhs, rhs );
 	}
 
 	@Override
@@ -1235,7 +1282,7 @@ public class SemanticQueryBuilder
 			}
 		}
 
-		return new RelationalSqmPredicate( RelationalPredicateOperator.NOT_EQUAL, lhs, rhs );
+		return new RelationalSqmPredicate( sessionFactory, RelationalPredicateOperator.NOT_EQUAL, lhs, rhs );
 	}
 
 	@Override
@@ -1255,7 +1302,7 @@ public class SemanticQueryBuilder
 			}
 		}
 
-		return new RelationalSqmPredicate( RelationalPredicateOperator.GREATER_THAN, lhs, rhs );
+		return new RelationalSqmPredicate( sessionFactory, RelationalPredicateOperator.GREATER_THAN, lhs, rhs );
 	}
 
 	@Override
@@ -1275,7 +1322,7 @@ public class SemanticQueryBuilder
 			}
 		}
 
-		return new RelationalSqmPredicate( RelationalPredicateOperator.GREATER_THAN_OR_EQUAL, lhs, rhs );
+		return new RelationalSqmPredicate( sessionFactory, RelationalPredicateOperator.GREATER_THAN_OR_EQUAL, lhs, rhs );
 	}
 
 	@Override
@@ -1295,7 +1342,7 @@ public class SemanticQueryBuilder
 			}
 		}
 
-		return new RelationalSqmPredicate( RelationalPredicateOperator.LESS_THAN, lhs, rhs );
+		return new RelationalSqmPredicate( sessionFactory, RelationalPredicateOperator.LESS_THAN, lhs, rhs );
 	}
 
 	@Override
@@ -1315,7 +1362,7 @@ public class SemanticQueryBuilder
 			}
 		}
 
-		return new RelationalSqmPredicate( RelationalPredicateOperator.LESS_THAN_OR_EQUAL, lhs, rhs );
+		return new RelationalSqmPredicate( sessionFactory, RelationalPredicateOperator.LESS_THAN_OR_EQUAL, lhs, rhs );
 	}
 
 	@Override
@@ -1350,6 +1397,7 @@ public class SemanticQueryBuilder
 		}
 
 		return new BetweenSqmPredicate(
+				sessionFactory,
 				expression,
 				lowerBound,
 				upperBound,
@@ -1361,6 +1409,7 @@ public class SemanticQueryBuilder
 	public SqmPredicate visitLikePredicate(HqlParser.LikePredicateContext ctx) {
 		if ( ctx.likeEscape() != null ) {
 			return new LikeSqmPredicate(
+					sessionFactory,
 					(SqmExpression) ctx.expression().get( 0 ).accept( this ),
 					(SqmExpression) ctx.expression().get( 1 ).accept( this ),
 					(SqmExpression) ctx.likeEscape().expression().accept( this )
@@ -1368,6 +1417,7 @@ public class SemanticQueryBuilder
 		}
 		else {
 			return new LikeSqmPredicate(
+					sessionFactory,
 					(SqmExpression) ctx.expression().get( 0 ).accept( this ),
 					(SqmExpression) ctx.expression().get( 1 ).accept( this )
 			);
@@ -1376,6 +1426,7 @@ public class SemanticQueryBuilder
 
 	@Override
 	public SqmPredicate visitMemberOfPredicate(HqlParser.MemberOfPredicateContext ctx) {
+		final SqmExpression lhs = (SqmExpression) ctx.expression().accept( this );
 		final SqmNavigableReference pathResolution = (SqmNavigableReference) ctx.path().accept( this );
 		if ( pathResolution == null ) {
 			throw new SemanticException( "Could not resolve path [" + ctx.path().getText() + "] as a plural attribute reference" );
@@ -1385,7 +1436,7 @@ public class SemanticQueryBuilder
 			throw new SemanticException( "Path argument to MEMBER OF must be a plural attribute" );
 		}
 
-		return new MemberOfSqmPredicate( (SqmPluralAttributeReference) pathResolution );
+		return new MemberOfSqmPredicate( sessionFactory, lhs, (SqmPluralAttributeReference) pathResolution );
 	}
 
 	@Override
@@ -1410,7 +1461,7 @@ public class SemanticQueryBuilder
 					listExpressions.add( listItemExpression );
 				}
 
-				return new InListSqmPredicate( testExpression, listExpressions );
+				return new InListSqmPredicate( sessionFactory, testExpression, listExpressions );
 			}
 			finally {
 				parameterDeclarationContextStack.pop();
@@ -1427,7 +1478,7 @@ public class SemanticQueryBuilder
 				);
 			}
 
-			return new InSubQuerySqmPredicate( testExpression, (SqmSubQuery) subQueryExpression );
+			return new InListSqmPredicate( sessionFactory, testExpression, (SqmSubQuery) subQueryExpression );
 		}
 
 		// todo : handle PersistentCollectionReferenceInList labeled branch
@@ -1443,13 +1494,14 @@ public class SemanticQueryBuilder
 		if ( ctx.entityTypeReference().parameter() != null ) {
 			// we have form (2)
 			return new SqmParameterizedEntityType(
+					sessionFactory,
 					(SqmParameter) ctx.entityTypeReference().parameter().accept( this )
 			);
 		}
 		else if ( ctx.entityTypeReference().path() != null ) {
 			final SqmNavigableReference binding = (SqmNavigableReference) ctx.entityTypeReference().path().accept( this );
 			validateBindingAsEntityTypeExpression( binding );
-			return new SqmEntityTypeExpression( binding );
+			return new SqmEntityTypeExpression( binding, sessionFactory );
 		}
 
 		throw new ParsingException( "Could not interpret grammar context as 'entity type' expression : " + ctx.getText() );
@@ -1476,7 +1528,8 @@ public class SemanticQueryBuilder
 				pathResolution,
 				(BasicJavaDescriptor) getSessionFactory().getTypeConfiguration()
 						.getJavaTypeDescriptorRegistry()
-						.getDescriptor( Map.Entry.class )
+						.getDescriptor( Map.Entry.class ),
+				sessionFactory
 		);
 	}
 
@@ -1701,6 +1754,7 @@ public class SemanticQueryBuilder
 			throw new ParsingException( "Expecting 2 operands to the concat operator" );
 		}
 		return new SqmConcat(
+				sessionFactory,
 				(SqmExpression) ctx.expression( 0 ).accept( this ),
 				(SqmExpression) ctx.expression( 1 ).accept( this )
 		);
@@ -1715,6 +1769,7 @@ public class SemanticQueryBuilder
 		final SqmExpression firstOperand = (SqmExpression) ctx.expression( 0 ).accept( this );
 		final SqmExpression secondOperand = (SqmExpression) ctx.expression( 1 ).accept( this );
 		return new SqmBinaryArithmetic(
+				sessionFactory,
 				SqmBinaryArithmetic.Operation.ADD,
 				firstOperand,
 				secondOperand,
@@ -1735,6 +1790,7 @@ public class SemanticQueryBuilder
 		final SqmExpression firstOperand = (SqmExpression) ctx.expression( 0 ).accept( this );
 		final SqmExpression secondOperand = (SqmExpression) ctx.expression( 1 ).accept( this );
 		return new SqmBinaryArithmetic(
+				sessionFactory,
 				SqmBinaryArithmetic.Operation.SUBTRACT,
 				firstOperand,
 				secondOperand,
@@ -1755,6 +1811,7 @@ public class SemanticQueryBuilder
 		final SqmExpression firstOperand = (SqmExpression) ctx.expression( 0 ).accept( this );
 		final SqmExpression secondOperand = (SqmExpression) ctx.expression( 1 ).accept( this );
 		return new SqmBinaryArithmetic(
+				sessionFactory,
 				SqmBinaryArithmetic.Operation.MULTIPLY,
 				firstOperand,
 				secondOperand,
@@ -1775,6 +1832,7 @@ public class SemanticQueryBuilder
 		final SqmExpression firstOperand = (SqmExpression) ctx.expression( 0 ).accept( this );
 		final SqmExpression secondOperand = (SqmExpression) ctx.expression( 1 ).accept( this );
 		return new SqmBinaryArithmetic(
+				sessionFactory,
 				SqmBinaryArithmetic.Operation.DIVIDE,
 				firstOperand,
 				secondOperand,
@@ -1795,6 +1853,7 @@ public class SemanticQueryBuilder
 		final SqmExpression firstOperand = (SqmExpression) ctx.expression( 0 ).accept( this );
 		final SqmExpression secondOperand = (SqmExpression) ctx.expression( 1 ).accept( this );
 		return new SqmBinaryArithmetic(
+				sessionFactory,
 				SqmBinaryArithmetic.Operation.MODULO,
 				firstOperand,
 				secondOperand,
@@ -1809,6 +1868,7 @@ public class SemanticQueryBuilder
 	@Override
 	public Object visitUnaryPlusExpression(HqlParser.UnaryPlusExpressionContext ctx) {
 		return new SqmUnaryOperation(
+				sessionFactory,
 				SqmUnaryOperation.Operation.PLUS,
 				(SqmExpression) ctx.expression().accept( this )
 		);
@@ -1817,6 +1877,7 @@ public class SemanticQueryBuilder
 	@Override
 	public Object visitUnaryMinusExpression(HqlParser.UnaryMinusExpressionContext ctx) {
 		return new SqmUnaryOperation(
+				sessionFactory,
 				SqmUnaryOperation.Operation.MINUS,
 				(SqmExpression) ctx.expression().accept( this )
 		);
@@ -1825,6 +1886,7 @@ public class SemanticQueryBuilder
 	@Override
 	public SqmCaseSimple visitSimpleCaseStatement(HqlParser.SimpleCaseStatementContext ctx) {
 		final SqmCaseSimple caseExpression = new SqmCaseSimple(
+				sessionFactory,
 				(SqmExpression) ctx.expression().accept( this )
 		);
 
@@ -1844,7 +1906,7 @@ public class SemanticQueryBuilder
 
 	@Override
 	public SqmCaseSearched visitSearchedCaseStatement(HqlParser.SearchedCaseStatementContext ctx) {
-		final SqmCaseSearched caseExpression = new SqmCaseSearched();
+		final SqmCaseSearched caseExpression = new SqmCaseSearched( sessionFactory );
 
 		for ( HqlParser.SearchedCaseWhenContext whenFragment : ctx.searchedCaseWhen() ) {
 			caseExpression.when(
@@ -1862,7 +1924,7 @@ public class SemanticQueryBuilder
 
 	@Override
 	public SqmCoalesceFunction visitCoalesceExpression(HqlParser.CoalesceExpressionContext ctx) {
-		SqmCoalesceFunction coalesceExpression = new SqmCoalesceFunction();
+		SqmCoalesceFunction coalesceExpression = new SqmCoalesceFunction( sessionFactory );
 		for ( HqlParser.ExpressionContext expressionContext : ctx.coalesce().expression() ) {
 			coalesceExpression.value( (SqmExpression) expressionContext.accept( this ) );
 		}
@@ -1872,6 +1934,7 @@ public class SemanticQueryBuilder
 	@Override
 	public SqmNullifFunction visitNullIfExpression(HqlParser.NullIfExpressionContext ctx) {
 		return new SqmNullifFunction(
+				sessionFactory,
 				(SqmExpression) ctx.nullIf().expression( 0 ).accept( this ),
 				(SqmExpression) ctx.nullIf().expression( 1 ).accept( this )
 		);
@@ -1929,7 +1992,7 @@ public class SemanticQueryBuilder
 			return booleanLiteral( true );
 		}
 		else if ( ctx.literal().NULL() != null ) {
-			return new SqmLiteralNull();
+			return new SqmLiteralNull( sessionFactory );
 		}
 		else if ( ctx.literal().timestampLiteral() != null ) {
 			return SqmLiteralTimestamp.from( ctx.literal().timestampLiteral().dateTimeLiteralText().getText(), this );
@@ -1945,11 +2008,38 @@ public class SemanticQueryBuilder
 		throw new ParsingException( "Unexpected literal expression type [" + ctx.getText() + "]" );
 	}
 
+	@Override
+	public Object visitTimestampLiteral(HqlParser.TimestampLiteralContext ctx) {
+		return new SqmLiteralTimestamp(
+				sessionFactory,
+				Timestamp.valueOf( ctx.dateTimeLiteralText().getText() ),
+				resolveExpressableTypeBasic( Timestamp.class )
+		);
+	}
+
+	@Override
+	public Object visitDateLiteral(HqlParser.DateLiteralContext ctx) {
+		return new SqmLiteralDate(
+				sessionFactory,
+				Date.valueOf( ctx.dateTimeLiteralText().getText() ),
+				resolveExpressableTypeBasic( Date.class )
+		);
+	}
+
+	@Override
+	public Object visitTimeLiteral(HqlParser.TimeLiteralContext ctx) {
+		return new SqmLiteralTime(
+				sessionFactory,
+				Time.valueOf( ctx.dateTimeLiteralText().getText() ),
+				resolveExpressableTypeBasic( Time.class )
+		);
+	}
+
 	private SqmLiteral<Boolean> booleanLiteral(boolean value) {
 		final BasicValuedExpressableType expressionType = resolveExpressableTypeBasic( Boolean.class );
 		return value
-				? new SqmLiteralTrue( expressionType )
-				: new SqmLiteralFalse( expressionType );
+				? new SqmLiteralTrue( sessionFactory, expressionType )
+				: new SqmLiteralFalse( sessionFactory, expressionType );
 	}
 
 	private SqmLiteralCharacter characterLiteral(String text) {
@@ -1958,6 +2048,7 @@ public class SemanticQueryBuilder
 			throw new ParsingException( "Value for CHARACTER_LITERAL token was more than 1 character" );
 		}
 		return new SqmLiteralCharacter(
+				sessionFactory,
 				text.charAt( 0 ),
 				resolveExpressableTypeBasic( Character.class )
 		);
@@ -1965,6 +2056,7 @@ public class SemanticQueryBuilder
 
 	private SqmLiteral stringLiteral(String text) {
 		return new SqmLiteralString(
+				sessionFactory,
 				text,
 				resolveExpressableTypeBasic( String.class )
 		);
@@ -1975,6 +2067,7 @@ public class SemanticQueryBuilder
 		try {
 			final Integer value = Integer.valueOf( text );
 			return new SqmLiteralInteger(
+					sessionFactory,
 					value,
 					resolveExpressableTypeBasic( Integer.class )
 			);
@@ -1996,6 +2089,7 @@ public class SemanticQueryBuilder
 			}
 			final Long value = Long.valueOf( text );
 			return new SqmLiteralLong(
+					sessionFactory,
 					value,
 					resolveExpressableTypeBasic( Long.class )
 			);
@@ -2016,6 +2110,7 @@ public class SemanticQueryBuilder
 				text = text.substring( 0, text.length() - 2 );
 			}
 			return new SqmLiteralBigInteger(
+					sessionFactory,
 					new BigInteger( text ),
 					resolveExpressableTypeBasic( BigInteger.class  )
 			);
@@ -2032,6 +2127,7 @@ public class SemanticQueryBuilder
 	protected SqmLiteralFloat floatLiteral(String text) {
 		try {
 			return new SqmLiteralFloat(
+					sessionFactory,
 					Float.valueOf( text ),
 					resolveExpressableTypeBasic( Float.class )
 			);
@@ -2048,6 +2144,7 @@ public class SemanticQueryBuilder
 	protected SqmLiteralDouble doubleLiteral(String text) {
 		try {
 			return new SqmLiteralDouble(
+					sessionFactory,
 					Double.valueOf( text ),
 					resolveExpressableTypeBasic( Double.class )
 			);
@@ -2068,6 +2165,7 @@ public class SemanticQueryBuilder
 				text = text.substring( 0, text.length() - 2 );
 			}
 			return new SqmLiteralBigDecimal(
+					sessionFactory,
 					new BigDecimal( text ),
 					resolveExpressableTypeBasic( BigDecimal.class )
 			);
@@ -2092,6 +2190,7 @@ public class SemanticQueryBuilder
 	@Override
 	public SqmNamedParameter visitNamedParameter(HqlParser.NamedParameterContext ctx) {
 		final SqmNamedParameter param = new SqmNamedParameter(
+				sessionFactory,
 				ctx.identifier().getText(),
 				parameterDeclarationContextStack.getCurrent().isMultiValuedBindingAllowed()
 		);
@@ -2105,6 +2204,7 @@ public class SemanticQueryBuilder
 			throw new SemanticException( "Encountered positional parameter which did not declare position (? instead of, e.g., ?1)" );
 		}
 		final SqmPositionalParameter param = new SqmPositionalParameter(
+				sessionFactory,
 				Integer.valueOf( ctx.INTEGER_LITERAL().getText() ),
 				parameterDeclarationContextStack.getCurrent().isMultiValuedBindingAllowed()
 		);
@@ -2122,7 +2222,7 @@ public class SemanticQueryBuilder
 		final List<SqmExpression> functionArguments = visitNonStandardFunctionArguments( ctx.nonStandardFunctionArguments() );
 
 		// todo : integrate some form of SqlFunction look-up using the ParsingContext so we can resolve the "type"
-		return new SqmGenericFunction( functionName, null, functionArguments );
+		return new SqmGenericFunction( sessionFactory, functionName, null, functionArguments );
 	}
 
 	@Override
@@ -2139,7 +2239,7 @@ public class SemanticQueryBuilder
 		final List<SqmExpression> functionArguments = visitNonStandardFunctionArguments( ctx.nonStandardFunctionArguments() );
 
 		// todo : integrate some form of SqlFunction look-up using the ParsingContext so we can resolve the "type"
-		return new SqmGenericFunction( functionName, null, functionArguments );
+		return new SqmGenericFunction( sessionFactory, functionName, null, functionArguments );
 	}
 
 	@Override
@@ -2180,10 +2280,11 @@ public class SemanticQueryBuilder
 	public SqmExpression visitAbsFunction(HqlParser.AbsFunctionContext ctx) {
 		return generateSingleArgFunction(
 				(sqmFunctionTemplate, sqmArgument) -> sqmFunctionTemplate.makeSqmFunctionExpression(
+						sessionFactory,
 						Collections.singletonList( sqmArgument ),
 						(AllowableFunctionReturnType) sqmArgument.getExpressableType()
 				),
-				arguments -> new SqmAbsFunction( arguments, null ),
+				arguments -> new SqmAbsFunction( sessionFactory, arguments, null ),
 				SqmAbsFunction.NAME,
 				ctx.expression()
 		);
@@ -2193,10 +2294,12 @@ public class SemanticQueryBuilder
 	public SqmExpression visitAvgFunction(HqlParser.AvgFunctionContext ctx) {
 		return generateAggregateFunction(
 				(sqmFunctionTemplate, sqmArgument) -> sqmFunctionTemplate.makeSqmFunctionExpression(
+						sessionFactory,
 						Collections.singletonList( sqmArgument ),
 						(AllowableFunctionReturnType) sqmArgument.getExpressableType()
 				),
 				sqmArgument -> new SqmAvgFunction(
+						sessionFactory,
 						sqmArgument,
 						(AllowableFunctionReturnType) sqmArgument.getExpressableType()
 				),
@@ -2225,6 +2328,7 @@ public class SemanticQueryBuilder
 		if ( template == null ) {
 			// use the standard CAST support
 			return new SqmCastFunction(
+					sessionFactory,
 					expressionToCast,
 					(AllowableFunctionReturnType) castTargetExpression,
 					castTargetExpression.getExpressableType().toString()
@@ -2232,6 +2336,7 @@ public class SemanticQueryBuilder
 		}
 		else {
 			return template.makeSqmFunctionExpression(
+					sessionFactory,
 					Arrays.asList( expressionToCast, castTargetExpression ),
 					(AllowableFunctionReturnType) castTargetExpression.getExpressableType()
 			);
@@ -2258,7 +2363,7 @@ public class SemanticQueryBuilder
 			arguments.add( (SqmExpression) argument.accept( this ) );
 		}
 
-		return new SqmConcatFunction( (BasicValuedExpressableType) arguments.get( 0 ).getExpressableType(), arguments );
+		return new SqmConcatFunction( sessionFactory, (BasicValuedExpressableType) arguments.get( 0 ).getExpressableType(), arguments );
 	}
 
 	@Override
@@ -2272,13 +2377,14 @@ public class SemanticQueryBuilder
 							? Collections.singletonList( SqmCountStarFunction.STAR )
 							: Collections.singletonList( sqmArgument );
 					return sqmFunctionTemplate.makeSqmFunctionExpression(
+							sessionFactory,
 							arguments,
 							(AllowableFunctionReturnType) sqmArgument.getExpressableType()
 					);
 				},
 				sqmArgument -> isCountStar
-						? new SqmCountStarFunction( longType )
-						:  new SqmCountFunction( sqmArgument, longType ),
+						? new SqmCountStarFunction( sessionFactory, longType )
+						:  new SqmCountFunction( sessionFactory, sqmArgument, longType ),
 				SqmCountFunction.NAME,
 				ctx.DISTINCT() != null, ctx.expression()
 		);
@@ -2293,10 +2399,12 @@ public class SemanticQueryBuilder
 	public SqmExpression visitMaxFunction(HqlParser.MaxFunctionContext ctx) {
 		return generateAggregateFunction(
 				(template, sqmArgument) -> template.makeSqmFunctionExpression(
+						sessionFactory,
 						Collections.singletonList( sqmArgument ),
 						(BasicValuedExpressableType) sqmArgument.getExpressableType()
 				),
 				sqmArgument -> new SqmMaxFunction(
+						sessionFactory,
 						sqmArgument,
 						(BasicValuedExpressableType) sqmArgument.getExpressableType()
 				),
@@ -2366,10 +2474,12 @@ public class SemanticQueryBuilder
 	public SqmExpression visitMinFunction(HqlParser.MinFunctionContext ctx) {
 		return generateAggregateFunction(
 				(sqmFunctionTemplate, sqmArgument) -> sqmFunctionTemplate.makeSqmFunctionExpression(
+						sessionFactory,
 						Collections.singletonList( sqmArgument ),
 						(AllowableFunctionReturnType) sqmArgument.getExpressableType()
 				),
 				sqmArgument -> new SqmMinFunction(
+						sessionFactory,
 						sqmArgument,
 						(AllowableFunctionReturnType) sqmArgument.getExpressableType()
 				),
@@ -2386,17 +2496,19 @@ public class SemanticQueryBuilder
 		final SqmExpression length = ctx.substringFunctionLengthArgument() == null
 				? null
 				: (SqmExpression) ctx.substringFunctionLengthArgument().accept( this );
-		return new SqmSubstringFunction( (BasicValuedExpressableType) source.getExpressableType(), source, start, length );
+		return new SqmSubstringFunction( sessionFactory, (BasicValuedExpressableType) source.getExpressableType(), source, start, length );
 	}
 
 	@Override
 	public SqmExpression visitSumFunction(HqlParser.SumFunctionContext ctx) {
 		return generateAggregateFunction(
 				(sqmFunctionTemplate, sqmArgument) -> sqmFunctionTemplate.makeSqmFunctionExpression(
+						sessionFactory,
 						Collections.singletonList( sqmArgument ),
 						(AllowableFunctionReturnType) sqmArgument.getExpressableType()
 				),
 				sqmArgument -> new SqmSumFunction(
+						sessionFactory,
 						sqmArgument,
 						(AllowableFunctionReturnType) sqmArgument.getExpressableType()
 				),
@@ -2417,6 +2529,7 @@ public class SemanticQueryBuilder
 
 		if ( trimFunctionTemplate != null ) {
 			return trimFunctionTemplate.makeSqmFunctionExpression(
+					sessionFactory,
 					Arrays.asList(
 							TrimSpecificationExpressionWrapper.wrap( visitTrimSpecification( ctx.trimSpecification() ) ),
 							visitTrimCharacter( ctx.trimCharacter() ),
@@ -2427,6 +2540,7 @@ public class SemanticQueryBuilder
 		}
 
 		return new SqmTrimFunction(
+				sessionFactory,
 				(BasicValuedExpressableType) source.getExpressableType(),
 				visitTrimSpecification( ctx.trimSpecification() ),
 				visitTrimCharacter( ctx.trimCharacter() ),
@@ -2455,6 +2569,7 @@ public class SemanticQueryBuilder
 				throw new SemanticException( "Expecting [trim character] for TRIM function to be  single character, found : " + trimCharText );
 			}
 			return new SqmLiteralCharacter(
+					sessionFactory,
 					trimCharText.charAt( 0 ),
 					resolveExpressableTypeBasic( Character.class )
 			);
@@ -2465,12 +2580,14 @@ public class SemanticQueryBuilder
 				throw new SemanticException( "Expecting [trim character] for TRIM function to be  single character, found : " + trimCharText );
 			}
 			return new SqmLiteralCharacter(
+					sessionFactory,
 					trimCharText.charAt( 0 ),
 					resolveExpressableTypeBasic( Character.class ));
 		}
 
 		// JPA says space is the default
 		return new SqmLiteralCharacter(
+				sessionFactory,
 				' ',
 				resolveExpressableTypeBasic( Character.class )
 		);
@@ -2480,6 +2597,7 @@ public class SemanticQueryBuilder
 	public SqmUpperFunction visitUpperFunction(HqlParser.UpperFunctionContext ctx) {
 		final SqmExpression expression = (SqmExpression) ctx.expression().accept( this );
 		return new SqmUpperFunction(
+				sessionFactory,
 				(BasicValuedExpressableType) expression.getExpressableType(),
 				expression
 		);
@@ -2491,6 +2609,7 @@ public class SemanticQueryBuilder
 		//			can't we just pass the expression?
 		final SqmExpression expression = (SqmExpression) ctx.expression().accept( this );
 		return new SqmLowerFunction(
+				sessionFactory,
 				(BasicValuedExpressableType) expression.getExpressableType(),
 				expression
 		);
@@ -2500,6 +2619,7 @@ public class SemanticQueryBuilder
 	public SqmCollectionSize visitCollectionSizeFunction(HqlParser.CollectionSizeFunctionContext ctx) {
 		final SqmPluralAttributeReference attributeBinding = asPluralAttribute( (SqmNavigableReference) ctx.path().accept( this ) );
 		return new SqmCollectionSize(
+				sessionFactory,
 				attributeBinding,
 				resolveExpressableTypeBasic( Integer.class )
 		);
@@ -2544,7 +2664,7 @@ public class SemanticQueryBuilder
 			throw new StrictJpaComplianceViolation( StrictJpaComplianceViolation.Type.HQL_COLLECTION_FUNCTION );
 		}
 
-		return new SqmMaxElementReferenceBasic( asPluralAttribute( (SqmNavigableReference) ctx.path().accept( this ) ) );
+		return new SqmMaxElementReferenceBasic( asPluralAttribute( (SqmNavigableReference) ctx.path().accept( this ) ), this );
 	}
 
 	@Override
@@ -2556,14 +2676,14 @@ public class SemanticQueryBuilder
 		final SqmPluralAttributeReference pluralAttributeBinding = asPluralAttribute( (SqmNavigableReference) ctx.path().accept( this ) );
 		switch ( pluralAttributeBinding.getReferencedNavigable().getPersistentCollectionDescriptor().getElementDescriptor().getClassification() ) {
 			case BASIC: {
-				return new SqmMinElementReferenceBasic( pluralAttributeBinding );
+				return new SqmMinElementReferenceBasic( pluralAttributeBinding, this );
 			}
 			case EMBEDDABLE: {
-				return new SqmMinElementReferenceEmbedded( pluralAttributeBinding );
+				return new SqmMinElementReferenceEmbedded( pluralAttributeBinding, this );
 			}
 			case ONE_TO_MANY:
 			case MANY_TO_MANY: {
-				return new SqmMinElementReferenceEntity( pluralAttributeBinding );
+				return new SqmMinElementReferenceEntity( pluralAttributeBinding, this );
 			}
 			default: {
 				throw new NotYetImplementedException( "min-element function not yet supported for ANY elements" );
@@ -2588,14 +2708,14 @@ public class SemanticQueryBuilder
 
 		switch ( attributeBinding.getReferencedNavigable().getPersistentCollectionDescriptor().getIndexDescriptor().getClassification() ) {
 			case BASIC: {
-				return new SqmMaxIndexReferenceBasic( attributeBinding );
+				return new SqmMaxIndexReferenceBasic( attributeBinding, this );
 			}
 			case EMBEDDABLE: {
-				return new SqmMaxIndexReferenceEmbedded( attributeBinding );
+				return new SqmMaxIndexReferenceEmbedded( attributeBinding, this );
 			}
 			case ONE_TO_MANY:
 			case MANY_TO_MANY: {
-				return new SqmMaxIndexReferenceEntity( attributeBinding );
+				return new SqmMaxIndexReferenceEntity( attributeBinding, this );
 			}
 			default: {
 				throw new NotYetImplementedException(  );
@@ -2620,14 +2740,14 @@ public class SemanticQueryBuilder
 
 		switch ( attributeBinding.getReferencedNavigable().getPersistentCollectionDescriptor().getIndexDescriptor().getClassification() ) {
 			case BASIC: {
-				return new SqmMinIndexReferenceBasic( attributeBinding );
+				return new SqmMinIndexReferenceBasic( attributeBinding, this );
 			}
 			case EMBEDDABLE: {
-				return new SqmMinIndexReferenceEmbeddable( attributeBinding );
+				return new SqmMinIndexReferenceEmbeddable( attributeBinding, this );
 			}
 			case ONE_TO_MANY:
 			case MANY_TO_MANY: {
-				return new SqmMinIndexReferenceEntity( attributeBinding );
+				return new SqmMinIndexReferenceEntity( attributeBinding, this );
 			}
 			default: {
 				throw new NotYetImplementedException(  );
@@ -2637,21 +2757,10 @@ public class SemanticQueryBuilder
 
 	@Override
 	public SqmSubQuery visitSubQueryExpression(HqlParser.SubQueryExpressionContext ctx) {
-		final SqmQuerySpec querySpec = visitQuerySpec( ctx.querySpec() );
-		return new SqmSubQuery( querySpec, determineTypeDescriptor( querySpec.getSelectClause() ) );
-	}
-
-	private static ExpressableType determineTypeDescriptor(SqmSelectClause selectClause) {
-		if ( selectClause.getSelections().size() != 1 ) {
-			return null;
-		}
-
-		final SqmSelectableNode selectableNode = selectClause.getSelections().get( 0 ).getSelectableNode();
-		if ( SqmDynamicInstantiation.class.isInstance( selectableNode ) ) {
-			throw new HibernateException( "Illegal use of dynamic-instantiation in sub-query" );
-		}
-
-		return ( (SqmExpression) selectableNode ).getExpressableType();
+		return new SqmSubQuery(
+				this,
+				() -> visitQuerySpec( ctx.querySpec() )
+		);
 	}
 
 	private interface TreatHandler {

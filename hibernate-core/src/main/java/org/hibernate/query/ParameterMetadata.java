@@ -116,7 +116,25 @@ public interface ParameterMetadata<P extends QueryParameter<?>> {
 	 */
 	int getPositionalParameterCount();
 
-	Set<Integer> getOrdinalParameterLabels();
+    Set<Integer> getOrdinalParameterLabels();
+
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~`
+    // "anonymous" parameters
+
+    /**
+     * Does this parameter set contain any anonymous parameters?
+     *
+     * @return {@code true} if there are anoymous parameters; {@code false} otherwise.
+     */
+    boolean hasAnonymousParameters();
+
+    /**
+     * Returns the number of positional parameters.
+     *
+     * @return The number of positional parameters.  Will return zero if
+     * {@link #hasPositionalParameters()} is {@code false}
+     */
+    int getAnonymousParameterCount();
 
 	Collection<P> getPositionalParameters();
 }

@@ -9,10 +9,14 @@ package org.hibernate.query.sqm.tree.from;
 import org.hibernate.metamodel.model.domain.spi.EntityDescriptor;
 import org.hibernate.query.sqm.consume.spi.SemanticQueryWalker;
 import org.hibernate.query.sqm.produce.spi.SqmCreationContext;
+import org.hibernate.query.sqm.tree.SqmCopyContext;
 import org.hibernate.query.sqm.tree.SqmJoinType;
 import org.hibernate.query.sqm.tree.expression.domain.SqmEntityReference;
 import org.hibernate.query.sqm.tree.predicate.SqmPredicate;
 import org.hibernate.type.descriptor.java.spi.JavaTypeDescriptor;
+
+import javax.persistence.criteria.*;
+import javax.persistence.metamodel.Attribute;
 
 /**
  * @author Steve Ebersole
@@ -34,7 +38,8 @@ public class SqmEntityJoin
 				fromElementSpace,
 				uid,
 				alias,
-				joinType
+				joinType,
+				creationContext
 		);
 		this.joinedEntityReference = new SqmEntityReference( joinedEntityDescriptor, this, creationContext );
 	}
@@ -58,6 +63,18 @@ public class SqmEntityJoin
 	}
 
 	@Override
+	public SqmEntityJoin copy(SqmCopyContext context) {
+		return context.copy(this, () -> new SqmEntityJoin(
+				context.getCreationContext().getCurrentFromElementSpace(),
+				getUniqueIdentifier(),
+				getIdentificationVariable(),
+				(EntityDescriptor) joinedEntityReference.getReferencedNavigable(),
+				getSqmJoinType(),
+				context.getCreationContext()
+		));
+	}
+
+	@Override
 	public <T> T accept(SemanticQueryWalker<T> walker) {
 		return walker.visitQualifiedEntityJoinFromElement( this );
 	}
@@ -65,5 +82,23 @@ public class SqmEntityJoin
 	@Override
 	public JavaTypeDescriptor getJavaTypeDescriptor() {
 		return getNavigableReference().getJavaTypeDescriptor();
+	}
+
+	@Override
+	public Path<?> getParentPath() {
+		// todo : shouldn't an entity join have a LHS as well?
+		return null;
+	}
+
+	@Override
+	public From getParent() {
+		// todo : shouldn't an entity join have a LHS as well?
+		return null;
+	}
+
+	@Override
+	public Attribute getAttribute() {
+		// There is no attribute for an entity join
+		return null;
 	}
 }

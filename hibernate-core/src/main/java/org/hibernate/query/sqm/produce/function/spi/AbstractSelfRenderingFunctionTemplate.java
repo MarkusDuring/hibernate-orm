@@ -8,6 +8,7 @@ package org.hibernate.query.sqm.produce.function.spi;
 
 import java.util.List;
 
+import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.metamodel.model.domain.spi.AllowableFunctionReturnType;
 import org.hibernate.query.sqm.produce.function.ArgumentsValidator;
 import org.hibernate.query.sqm.produce.function.FunctionReturnTypeResolver;
@@ -37,9 +38,11 @@ public abstract class AbstractSelfRenderingFunctionTemplate extends AbstractSqmF
 
 	@Override
 	protected SqmExpression generateSqmFunctionExpression(
+            SessionFactoryImplementor sessionFactory,
 			List<SqmExpression> arguments,
-			AllowableFunctionReturnType resolvedReturnType) {
+            AllowableFunctionReturnType resolvedReturnType) {
 		return new SelfRenderingSqmFunction(
+				sessionFactory,
 				getRenderingFunctionSupport( arguments, resolvedReturnType ),
 				arguments,
 				resolvedReturnType

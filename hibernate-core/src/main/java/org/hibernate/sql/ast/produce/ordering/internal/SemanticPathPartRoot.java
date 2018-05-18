@@ -74,7 +74,7 @@ public class SemanticPathPartRoot implements SemanticPathPart {
 
 		if ( isTerminal ) {
 			// otherwise assume we have a column name
-			return new SqmColumnReference( sqmFromBase, name );
+			return new SqmColumnReference( context, sqmFromBase, name );
 		}
 
 		throw new SemanticException( "Could not resolve path root : " + name + " [" + currentContextKey + "]" );

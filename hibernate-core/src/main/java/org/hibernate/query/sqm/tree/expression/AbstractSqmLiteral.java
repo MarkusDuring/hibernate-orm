@@ -6,28 +6,27 @@
  */
 package org.hibernate.query.sqm.tree.expression;
 
+import org.hibernate.engine.spi.SessionFactoryImplementor;
+import org.hibernate.query.sqm.SemanticException;
 import org.hibernate.sql.ast.produce.metamodel.spi.BasicValuedExpressableType;
 import org.hibernate.sql.ast.produce.metamodel.spi.ExpressableType;
-import org.hibernate.query.sqm.SemanticException;
-import org.hibernate.sql.ast.tree.spi.expression.Expression;
-import org.hibernate.sql.results.internal.ScalarQueryResultImpl;
-import org.hibernate.sql.results.spi.QueryResult;
-import org.hibernate.sql.results.spi.QueryResultCreationContext;
 import org.hibernate.type.descriptor.java.spi.JavaTypeDescriptor;
 
 /**
  * @author Steve Ebersole
  */
-public abstract class AbstractSqmLiteral<T> implements SqmLiteral<T> {
+public abstract class AbstractSqmLiteral<T> extends AbstractSqmExpression implements SqmLiteral<T> {
 	private final T value;
 
 	private BasicValuedExpressableType type;
 
-	public AbstractSqmLiteral(T value) {
+	public AbstractSqmLiteral(SessionFactoryImplementor sessionFactory, T value) {
+		super( sessionFactory );
 		this.value = value;
 	}
 
-	public AbstractSqmLiteral(T value, BasicValuedExpressableType type) {
+	public AbstractSqmLiteral(SessionFactoryImplementor sessionFactory, T value, BasicValuedExpressableType type) {
+		super( sessionFactory );
 		this.value = value;
 		this.type = type;
 	}

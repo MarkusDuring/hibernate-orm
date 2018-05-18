@@ -8,6 +8,7 @@ package org.hibernate.query.sqm.produce.function;
 
 import java.util.List;
 
+import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.metamodel.model.domain.spi.AllowableFunctionReturnType;
 import org.hibernate.query.sqm.tree.expression.SqmExpression;
 import org.hibernate.sql.Template;
@@ -31,6 +32,7 @@ public interface SqmFunctionTemplate {
 	 * "expressable form".
 	 */
 	SqmExpression makeSqmFunctionExpression(
+			SessionFactoryImplementor sessionFactory,
 			List<SqmExpression> arguments,
 			AllowableFunctionReturnType impliedResultType);
 

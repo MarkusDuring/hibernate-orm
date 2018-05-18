@@ -15,6 +15,8 @@ import java.util.Arrays;
 import org.hibernate.HibernateException;
 import org.hibernate.engine.jdbc.BinaryStream;
 import org.hibernate.engine.jdbc.internal.BinaryStreamImpl;
+import org.hibernate.engine.spi.SessionFactoryImplementor;
+import org.hibernate.query.sqm.tree.expression.SqmLiteral;
 import org.hibernate.type.descriptor.java.spi.AbstractBasicJavaDescriptor;
 import org.hibernate.type.descriptor.java.spi.ArrayMutabilityPlan;
 import org.hibernate.type.descriptor.spi.JdbcRecommendedSqlTypeMappingContext;
@@ -22,6 +24,7 @@ import org.hibernate.type.descriptor.spi.WrapperOptions;
 import org.hibernate.type.descriptor.sql.spi.SqlTypeDescriptor;
 import org.hibernate.metamodel.model.domain.spi.BinaryVersionSupport;
 import org.hibernate.metamodel.model.domain.spi.VersionSupport;
+import org.hibernate.type.spi.BasicType;
 
 /**
  * Descriptor for {@code byte[]} handling.
@@ -45,6 +48,11 @@ public class PrimitiveByteArrayJavaDescriptor extends AbstractBasicJavaDescripto
 	@Override
 	public SqlTypeDescriptor getJdbcRecommendedSqlType(JdbcRecommendedSqlTypeMappingContext context) {
 		return ByteArrayJavaDescriptor.INSTANCE.getJdbcRecommendedSqlType( context );
+	}
+
+	@Override
+	public SqmLiteral<byte[]> createLiteralExpression(SessionFactoryImplementor sessionFactory, BasicType<byte[]> basicType, byte[] value) {
+		return null;
 	}
 
 	@Override

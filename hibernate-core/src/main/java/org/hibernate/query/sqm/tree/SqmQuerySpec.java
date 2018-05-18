@@ -7,7 +7,9 @@
 package org.hibernate.query.sqm.tree;
 
 import org.hibernate.query.sqm.tree.from.SqmFromClauseContainer;
+import org.hibernate.query.sqm.tree.group.SqmGroupByClause;
 import org.hibernate.query.sqm.tree.order.SqmOrderByClause;
+import org.hibernate.query.sqm.tree.predicate.SqmHavingClause;
 import org.hibernate.query.sqm.tree.predicate.SqmWhereClause;
 import org.hibernate.query.sqm.tree.select.SqmSelectClause;
 import org.hibernate.query.sqm.tree.from.SqmFromClause;
@@ -23,6 +25,8 @@ public class SqmQuerySpec implements SqmFromClauseContainer, SqmWhereClauseConta
 	private final SqmFromClause fromClause;
 	private final SqmSelectClause selectClause;
 	private final SqmWhereClause whereClause;
+	private final SqmGroupByClause groupByClause;
+	private final SqmHavingClause havingClause;
 	private final SqmOrderByClause orderByClause;
 	private final SqmLimitOffsetClause limitOffsetClause;
 
@@ -32,13 +36,29 @@ public class SqmQuerySpec implements SqmFromClauseContainer, SqmWhereClauseConta
 			SqmFromClause fromClause,
 			SqmSelectClause selectClause,
 			SqmWhereClause whereClause,
+			SqmGroupByClause groupByClause,
+			SqmHavingClause havingClause,
 			SqmOrderByClause orderByClause,
 			SqmLimitOffsetClause limitOffsetClause) {
 		this.fromClause = fromClause;
 		this.selectClause = selectClause;
 		this.whereClause = whereClause;
+		this.groupByClause = groupByClause;
+		this.havingClause = havingClause;
 		this.orderByClause = orderByClause;
 		this.limitOffsetClause = limitOffsetClause;
+	}
+
+	public SqmQuerySpec copy(SqmCopyContext context) {
+		return new SqmQuerySpec(
+				fromClause.copy( context ),
+				selectClause.copy( context ),
+				whereClause.copy( context ),
+				groupByClause.copy( context ),
+				havingClause.copy( context ),
+				orderByClause.copy( context ),
+				limitOffsetClause.copy( context )
+		);
 	}
 
 	public SqmSelectClause getSelectClause() {
@@ -52,6 +72,14 @@ public class SqmQuerySpec implements SqmFromClauseContainer, SqmWhereClauseConta
 
 	public SqmWhereClause getWhereClause() {
 		return whereClause;
+	}
+
+	public SqmGroupByClause getGroupByClause() {
+		return groupByClause;
+	}
+
+	public SqmHavingClause getHavingClause() {
+		return havingClause;
 	}
 
 	public SqmOrderByClause getOrderByClause() {

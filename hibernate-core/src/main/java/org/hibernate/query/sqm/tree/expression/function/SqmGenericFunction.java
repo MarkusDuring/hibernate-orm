@@ -6,11 +6,14 @@
  */
 package org.hibernate.query.sqm.tree.expression.function;
 
-import java.util.List;
-
+import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.metamodel.model.domain.spi.AllowableFunctionReturnType;
 import org.hibernate.query.sqm.consume.spi.SemanticQueryWalker;
+import org.hibernate.query.sqm.tree.SqmCopyContext;
 import org.hibernate.query.sqm.tree.expression.SqmExpression;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * @author Steve Ebersole
@@ -23,10 +26,11 @@ public class SqmGenericFunction extends AbstractSqmFunction implements SqmNonSta
 	private final List<SqmExpression> arguments;
 
 	public SqmGenericFunction(
+			SessionFactoryImplementor sessionFactory,
 			String functionName,
 			AllowableFunctionReturnType resultType,
 			List<SqmExpression> arguments) {
-		super( resultType );
+		super( sessionFactory, resultType );
 		this.functionName = functionName;
 		this.arguments = arguments;
 	}
@@ -42,6 +46,21 @@ public class SqmGenericFunction extends AbstractSqmFunction implements SqmNonSta
 
 	public List<SqmExpression> getArguments() {
 		return arguments;
+	}
+
+	@Override
+	public SqmGenericFunction copy(SqmCopyContext context) {
+		List<SqmExpression> newArguments = new ArrayList<>( arguments.size() );
+		for ( SqmExpression argument : arguments ) {
+			newArguments.add( argument.copy( context ) );
+		}
+
+		return new SqmGenericFunction(
+                getSessionFactory(),
+				functionName,
+				getExpressableType(),
+				newArguments
+		);
 	}
 
 	@Override

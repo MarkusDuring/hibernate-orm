@@ -13,14 +13,14 @@ import java.util.Map;
 import org.hibernate.query.sqm.AliasCollisionException;
 import org.hibernate.query.sqm.tree.expression.domain.SqmNavigableReference;
 import org.hibernate.query.sqm.tree.from.SqmFrom;
-import org.hibernate.query.sqm.tree.select.SqmSelection;
+import org.hibernate.query.sqm.tree.select.SqmSelectionBase;
 
 /**
  * @author Andrea Boriero
  */
 public class AliasRegistry {
 	private Map<String, SqmFrom> fromElementsByAlias = new HashMap<>();
-	private Map<String, SqmSelection> selectionsByAlias = new HashMap<>();
+	private Map<String, SqmSelectionBase> selectionsByAlias = new HashMap<>();
 
 	private AliasRegistry parent;
 
@@ -35,7 +35,7 @@ public class AliasRegistry {
 		return parent;
 	}
 
-	public void registerAlias(SqmSelection selection) {
+	public void registerAlias(SqmSelectionBase selection) {
 		if ( selection.getAlias() != null ) {
 			checkResultVariable( selection );
 			selectionsByAlias.put( selection.getAlias(), selection );
@@ -58,7 +58,7 @@ public class AliasRegistry {
 		}
 	}
 
-	public SqmSelection findSelectionByAlias(String alias) {
+	public SqmSelectionBase findSelectionByAlias(String alias) {
 		return selectionsByAlias.get( alias );
 	}
 
@@ -75,7 +75,7 @@ public class AliasRegistry {
 		return null;
 	}
 
-	private void checkResultVariable(SqmSelection selection) {
+	private void checkResultVariable(SqmSelectionBase selection) {
 		final String alias = selection.getAlias();
 		if ( selectionsByAlias.containsKey( alias ) ) {
 			throw new AliasCollisionException(

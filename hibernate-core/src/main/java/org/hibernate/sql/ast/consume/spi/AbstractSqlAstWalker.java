@@ -22,46 +22,14 @@ import org.hibernate.sql.ast.produce.SqlTreeException;
 import org.hibernate.sql.ast.produce.metamodel.spi.BasicValuedExpressableType;
 import org.hibernate.sql.ast.produce.spi.SqlSelectionExpression;
 import org.hibernate.sql.ast.tree.spi.QuerySpec;
-import org.hibernate.sql.ast.tree.spi.expression.AbsFunction;
-import org.hibernate.sql.ast.tree.spi.expression.AvgFunction;
-import org.hibernate.sql.ast.tree.spi.expression.BinaryArithmeticExpression;
-import org.hibernate.sql.ast.tree.spi.expression.BitLengthFunction;
-import org.hibernate.sql.ast.tree.spi.expression.CaseSearchedExpression;
-import org.hibernate.sql.ast.tree.spi.expression.CaseSimpleExpression;
-import org.hibernate.sql.ast.tree.spi.expression.CastFunction;
-import org.hibernate.sql.ast.tree.spi.expression.CoalesceFunction;
-import org.hibernate.sql.ast.tree.spi.expression.ColumnReference;
-import org.hibernate.sql.ast.tree.spi.expression.ConcatFunction;
-import org.hibernate.sql.ast.tree.spi.expression.CountFunction;
-import org.hibernate.sql.ast.tree.spi.expression.CountStarFunction;
-import org.hibernate.sql.ast.tree.spi.expression.CurrentDateFunction;
-import org.hibernate.sql.ast.tree.spi.expression.CurrentTimeFunction;
-import org.hibernate.sql.ast.tree.spi.expression.CurrentTimestampFunction;
-import org.hibernate.sql.ast.tree.spi.expression.Expression;
-import org.hibernate.sql.ast.tree.spi.expression.ExtractFunction;
-import org.hibernate.sql.ast.tree.spi.expression.GenericParameter;
-import org.hibernate.sql.ast.tree.spi.expression.LengthFunction;
-import org.hibernate.sql.ast.tree.spi.expression.LocateFunction;
-import org.hibernate.sql.ast.tree.spi.expression.LowerFunction;
-import org.hibernate.sql.ast.tree.spi.expression.MaxFunction;
-import org.hibernate.sql.ast.tree.spi.expression.MinFunction;
-import org.hibernate.sql.ast.tree.spi.expression.ModFunction;
-import org.hibernate.sql.ast.tree.spi.expression.NamedParameter;
-import org.hibernate.sql.ast.tree.spi.expression.NonStandardFunction;
-import org.hibernate.sql.ast.tree.spi.expression.NullifFunction;
-import org.hibernate.sql.ast.tree.spi.expression.PositionalParameter;
-import org.hibernate.sql.ast.tree.spi.expression.QueryLiteral;
-import org.hibernate.sql.ast.tree.spi.expression.SqrtFunction;
-import org.hibernate.sql.ast.tree.spi.expression.SumFunction;
-import org.hibernate.sql.ast.tree.spi.expression.TrimFunction;
-import org.hibernate.sql.ast.tree.spi.expression.UnaryOperation;
-import org.hibernate.sql.ast.tree.spi.expression.UpperFunction;
+import org.hibernate.sql.ast.tree.spi.expression.*;
 import org.hibernate.sql.ast.tree.spi.from.FromClause;
 import org.hibernate.sql.ast.tree.spi.from.TableGroup;
 import org.hibernate.sql.ast.tree.spi.from.TableGroupJoin;
 import org.hibernate.sql.ast.tree.spi.from.TableReference;
 import org.hibernate.sql.ast.tree.spi.from.TableReferenceJoin;
 import org.hibernate.sql.ast.tree.spi.from.TableSpace;
+import org.hibernate.sql.ast.tree.spi.group.GroupSpecification;
 import org.hibernate.sql.ast.tree.spi.predicate.BetweenPredicate;
 import org.hibernate.sql.ast.tree.spi.predicate.FilterPredicate;
 import org.hibernate.sql.ast.tree.spi.predicate.GroupedPredicate;
@@ -166,6 +134,31 @@ public abstract class AbstractSqlAstWalker
 			}
 		}
 
+		final List<GroupSpecification> groupSpecifications = querySpec.getGroupSpecifications();
+		if ( groupSpecifications != null && !groupSpecifications.isEmpty() ) {
+			appendSql( " group by " );
+
+			String separator = "";
+			for (GroupSpecification groupSpecification : groupSpecifications ) {
+				appendSql( separator );
+				visitGroupSpecification( groupSpecification );
+				separator = ", ";
+			}
+		}
+
+		if ( querySpec.getHavingClauseRestrictions() != null && !querySpec.getHavingClauseRestrictions().isEmpty() ) {
+			appendSql( " having " );
+
+			boolean wasPreviouslyInPredicate = isCurrentlyInPredicate();
+			setCurrentlyInPredicate( true );
+			try {
+				querySpec.getHavingClauseRestrictions().accept( this );
+			}
+			finally {
+				setCurrentlyInPredicate( wasPreviouslyInPredicate );
+			}
+		}
+
 		final List<SortSpecification> sortSpecifications = querySpec.getSortSpecifications();
 		if ( sortSpecifications != null && !sortSpecifications.isEmpty() ) {
 			appendSql( " order by " );
@@ -179,6 +172,20 @@ public abstract class AbstractSqlAstWalker
 		}
 
 		visitLimitOffsetClause( querySpec );
+	}
+
+	// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+	// GROUP BY clause
+
+	@Override
+	public void visitGroupSpecification(GroupSpecification groupSpecification) {
+		groupSpecification.getGroupExpression().accept( this );
+
+		final String collation = groupSpecification.getCollation();
+		if ( collation != null ) {
+			appendSql( " collate " );
+			appendSql( collation );
+		}
 	}
 
 	// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -737,6 +744,11 @@ public abstract class AbstractSqlAstWalker
 		return getSessionFactory().getTypeConfiguration()
 				.getBasicTypeRegistry()
 				.getBasicType( value.getClass() );
+	}
+
+	@Override
+	public void visitAnonymousParameter(AnonymousParameter anonymousParameter) {
+		visitGenericParameter( anonymousParameter );
 	}
 
 	@Override

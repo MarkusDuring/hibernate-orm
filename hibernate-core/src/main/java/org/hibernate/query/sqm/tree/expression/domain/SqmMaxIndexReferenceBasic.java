@@ -7,14 +7,24 @@
 package org.hibernate.query.sqm.tree.expression.domain;
 
 import org.hibernate.metamodel.model.domain.spi.BasicCollectionIndex;
+import org.hibernate.query.sqm.produce.spi.SqmCreationContext;
+import org.hibernate.query.sqm.tree.SqmCopyContext;
 
 /**
  * @author Steve Ebersole
  */
 public class SqmMaxIndexReferenceBasic extends AbstractSpecificSqmCollectionIndexReference
 		implements SqmMaxIndexReference {
-	public SqmMaxIndexReferenceBasic(SqmPluralAttributeReference pluralAttributeBinding) {
-		super( pluralAttributeBinding );
+	public SqmMaxIndexReferenceBasic(SqmPluralAttributeReference pluralAttributeBinding, SqmCreationContext creationContext) {
+		super( pluralAttributeBinding, creationContext );
+	}
+
+	@Override
+	public SqmMaxIndexReferenceBasic copy(SqmCopyContext context) {
+		return new SqmMaxIndexReferenceBasic(
+				getPluralAttributeReference().copy( context ),
+				context.getCreationContext()
+		);
 	}
 
 	@Override

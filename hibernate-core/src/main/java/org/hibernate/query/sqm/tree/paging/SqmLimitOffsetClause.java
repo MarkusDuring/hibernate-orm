@@ -6,18 +6,29 @@
  */
 package org.hibernate.query.sqm.tree.paging;
 
+import org.hibernate.query.sqm.tree.SqmCopyContext;
 import org.hibernate.query.sqm.tree.expression.SqmExpression;
 
 /**
  * @author Christian Beikov
  */
 public class SqmLimitOffsetClause {
-	private final SqmExpression limitExpression;
-	private final SqmExpression offsetExpression;
+	private SqmExpression limitExpression;
+	private SqmExpression offsetExpression;
+
+	public SqmLimitOffsetClause() {
+	}
 
 	public SqmLimitOffsetClause(SqmExpression limitExpression, SqmExpression offsetExpression) {
 		this.limitExpression = limitExpression;
 		this.offsetExpression = offsetExpression;
+	}
+
+	public SqmLimitOffsetClause copy(SqmCopyContext context) {
+		return new SqmLimitOffsetClause(
+				limitExpression == null ? null : limitExpression.copy( context ),
+				offsetExpression == null ? null : offsetExpression.copy( context )
+		);
 	}
 
 	public SqmExpression getLimitExpression() {

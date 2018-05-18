@@ -7,6 +7,8 @@
 package org.hibernate.query.sqm.tree.expression.domain;
 
 import org.hibernate.metamodel.model.domain.spi.EmbeddedValuedNavigable;
+import org.hibernate.query.sqm.produce.spi.SqmCreationContext;
+import org.hibernate.query.sqm.tree.SqmCopyContext;
 import org.hibernate.query.sqm.tree.from.SqmFrom;
 
 /**
@@ -17,8 +19,16 @@ public class SqmMaxIndexReferenceEmbedded
 		implements SqmMaxIndexReference, SqmEmbeddableTypedReference {
 	private SqmFrom exportedFromElement;
 
-	public SqmMaxIndexReferenceEmbedded(SqmPluralAttributeReference pluralAttributeBinding) {
-		super( pluralAttributeBinding );
+	public SqmMaxIndexReferenceEmbedded(SqmPluralAttributeReference pluralAttributeBinding, SqmCreationContext creationContext) {
+		super( pluralAttributeBinding, creationContext );
+	}
+
+	@Override
+	public SqmMaxIndexReferenceEmbedded copy(SqmCopyContext context) {
+		return new SqmMaxIndexReferenceEmbedded(
+				getPluralAttributeReference().copy( context ),
+				context.getCreationContext()
+		);
 	}
 
 	@Override

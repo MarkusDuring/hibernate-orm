@@ -6,18 +6,24 @@
  */
 package org.hibernate.query.sqm.tree.expression;
 
-import java.math.BigDecimal;
-
+import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.query.sqm.consume.spi.SemanticQueryWalker;
+import org.hibernate.query.sqm.tree.SqmCopyContext;
 import org.hibernate.sql.ast.produce.metamodel.spi.BasicValuedExpressableType;
-import org.hibernate.type.descriptor.java.spi.JavaTypeDescriptor;
+
+import java.math.BigDecimal;
 
 /**
  * @author Steve Ebersole
  */
 public class SqmLiteralBigDecimal extends AbstractSqmLiteral<BigDecimal> {
-	public SqmLiteralBigDecimal(BigDecimal bigDecimal, BasicValuedExpressableType sqmExpressableTypeBasic) {
-		super( bigDecimal, sqmExpressableTypeBasic );
+	public SqmLiteralBigDecimal(SessionFactoryImplementor sessionFactory, BigDecimal bigDecimal, BasicValuedExpressableType sqmExpressableTypeBasic) {
+		super( sessionFactory, bigDecimal, sqmExpressableTypeBasic );
+	}
+
+	@Override
+	public SqmLiteralBigDecimal copy(SqmCopyContext context) {
+		return this;
 	}
 
 	@Override

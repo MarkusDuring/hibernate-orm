@@ -6,8 +6,10 @@
  */
 package org.hibernate.query.sqm.tree.expression.function;
 
+import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.metamodel.model.domain.spi.AllowableFunctionReturnType;
 import org.hibernate.query.sqm.consume.spi.SemanticQueryWalker;
+import org.hibernate.query.sqm.tree.SqmCopyContext;
 import org.hibernate.query.sqm.tree.expression.SqmExpression;
 
 /**
@@ -17,13 +19,27 @@ public class SqmSumFunction extends AbstractSqmAggregateFunction
 		implements SqmAggregateFunction {
 	public static final String NAME = "sum";
 
-	public SqmSumFunction(SqmExpression argument, AllowableFunctionReturnType resultType) {
-		super( argument, resultType );
+	public SqmSumFunction(SessionFactoryImplementor sessionFactory, SqmExpression argument, AllowableFunctionReturnType resultType) {
+		super( sessionFactory, argument, resultType );
+	}
+
+	public SqmSumFunction(SessionFactoryImplementor sessionFactory, SqmExpression argument, AllowableFunctionReturnType resultType, boolean distinct) {
+		super( sessionFactory, argument, resultType, distinct );
 	}
 
 	@Override
 	public String getFunctionName() {
 		return NAME;
+	}
+
+	@Override
+	public SqmSumFunction copy(SqmCopyContext context) {
+		return new SqmSumFunction(
+				getSessionFactory(),
+				getArgument().copy( context ),
+				getExpressableType(),
+				isDistinct()
+		);
 	}
 
 	@Override

@@ -12,6 +12,7 @@ import org.hibernate.metamodel.model.domain.internal.BasicSingularPersistentAttr
 import org.hibernate.metamodel.model.domain.spi.EntityDescriptor;
 import org.hibernate.query.sqm.consume.spi.SemanticQueryWalker;
 import org.hibernate.query.sqm.produce.spi.SqmCreationContext;
+import org.hibernate.query.sqm.tree.SqmCopyContext;
 import org.hibernate.query.sqm.tree.from.SqmFrom;
 
 /**
@@ -22,7 +23,16 @@ public class SqmSingularAttributeReferenceBasic extends AbstractSqmSingularAttri
 			SqmNavigableContainerReference containerReference,
 			BasicSingularPersistentAttribute boundNavigable,
 			SqmCreationContext creationContext) {
-		super( containerReference, boundNavigable );
+		super( containerReference, boundNavigable, creationContext );
+	}
+
+	@Override
+	public SqmSingularAttributeReferenceBasic copy(SqmCopyContext context) {
+		return new SqmSingularAttributeReferenceBasic(
+				getSourceReference(),
+				getReferencedNavigable(),
+				context.getCreationContext()
+		);
 	}
 
 	@Override
@@ -69,5 +79,10 @@ public class SqmSingularAttributeReferenceBasic extends AbstractSqmSingularAttri
 				getNavigableContainerReferenceInfo().getUniqueIdentifier(),
 				getReferencedNavigable().getName()
 		);
+	}
+
+	@Override
+	protected boolean canBeDereferenced() {
+		return false;
 	}
 }

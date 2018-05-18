@@ -83,7 +83,7 @@ public class BasicCollectionElementImpl<J>
 			SqmFrom sourceSqmFrom,
 			SqmNavigableContainerReference containerReference,
 			SqmCreationContext creationContext) {
-		return new SqmCollectionElementReferenceBasic( (SqmPluralAttributeReference) containerReference );
+		return new SqmCollectionElementReferenceBasic( (SqmPluralAttributeReference) containerReference, creationContext );
 	}
 
 	@Override

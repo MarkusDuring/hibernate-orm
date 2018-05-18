@@ -7,13 +7,11 @@
 package org.hibernate.query.sqm.tree.expression;
 
 import org.hibernate.HibernateException;
+import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.query.sqm.consume.spi.SemanticQueryWalker;
+import org.hibernate.query.sqm.tree.SqmCopyContext;
 import org.hibernate.sql.ast.produce.metamodel.spi.BasicValuedExpressableType;
 import org.hibernate.sql.ast.produce.metamodel.spi.ExpressableType;
-import org.hibernate.sql.ast.tree.spi.expression.Expression;
-import org.hibernate.sql.results.internal.ScalarQueryResultImpl;
-import org.hibernate.sql.results.spi.QueryResult;
-import org.hibernate.sql.results.spi.QueryResultCreationContext;
 import org.hibernate.type.descriptor.java.spi.BasicJavaDescriptor;
 import org.hibernate.type.descriptor.java.spi.JavaTypeDescriptor;
 import org.hibernate.type.descriptor.spi.ValueBinder;
@@ -23,11 +21,26 @@ import org.hibernate.type.spi.BasicType;
 /**
  * @author Steve Ebersole
  */
-public class SqmLiteralNull implements SqmLiteral<Void> {
+public class SqmLiteralNull extends AbstractSqmExpression implements SqmLiteral<Void> {
 	private BasicValuedExpressableType injectedExpressionType;
+	private final Class<?> javaType;
 
-	public SqmLiteralNull() {
-		injectedExpressionType = NULL_TYPE;
+	public SqmLiteralNull(SessionFactoryImplementor sessionFactory) {
+		super( sessionFactory );
+		this.injectedExpressionType = NULL_TYPE;
+		this.javaType = null;
+	}
+
+	public SqmLiteralNull(SessionFactoryImplementor sessionFactory, Class<?> javaType) {
+		super( sessionFactory );
+		this.injectedExpressionType = NULL_TYPE;
+		this.javaType = javaType;
+	}
+
+	public SqmLiteralNull(SessionFactoryImplementor sessionFactory, Class<?> javaType, BasicValuedExpressableType injectedExpressionType) {
+		super( sessionFactory );
+		this.javaType = javaType;
+		this.injectedExpressionType = injectedExpressionType;
 	}
 
 	@Override
@@ -43,6 +56,15 @@ public class SqmLiteralNull implements SqmLiteral<Void> {
 	@Override
 	public BasicValuedExpressableType getInferableType() {
 		return getExpressableType();
+	}
+
+	@Override
+	public SqmLiteralNull copy(SqmCopyContext context) {
+		return new SqmLiteralNull(
+                getSessionFactory(),
+				javaType,
+				injectedExpressionType
+		);
 	}
 
 	@Override
@@ -98,5 +120,14 @@ public class SqmLiteralNull implements SqmLiteral<Void> {
 	@Override
 	public JavaTypeDescriptor getJavaTypeDescriptor() {
 		return injectedExpressionType.getJavaTypeDescriptor();
+	}
+
+	@Override
+	public Class getJavaType() {
+		if (javaType == null) {
+			return super.getJavaType();
+		} else {
+			return javaType;
+		}
 	}
 }

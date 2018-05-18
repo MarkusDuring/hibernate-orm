@@ -6,23 +6,44 @@
  */
 package org.hibernate.query.sqm.tree.expression;
 
-import java.util.ArrayList;
-import java.util.List;
-
+import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.query.sqm.consume.spi.SemanticQueryWalker;
+import org.hibernate.query.sqm.tree.SqmCopyContext;
 import org.hibernate.query.sqm.tree.predicate.SqmPredicate;
 import org.hibernate.sql.ast.produce.metamodel.spi.ExpressableType;
 import org.hibernate.type.descriptor.java.spi.JavaTypeDescriptor;
 
+import javax.persistence.criteria.CriteriaBuilder;
+import javax.persistence.criteria.Expression;
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * @author Steve Ebersole
  */
-public class SqmCaseSearched implements ImpliedTypeSqmExpression {
+public class SqmCaseSearched extends AbstractSqmExpression implements ImpliedTypeSqmExpression, CriteriaBuilder.Case {
 	private List<WhenFragment> whenFragments = new ArrayList<>();
 	private SqmExpression otherwise;
 
 	private ExpressableType expressableType;
 	private ExpressableType impliedType;
+
+	public SqmCaseSearched(SessionFactoryImplementor sessionFactory) {
+		super( sessionFactory );
+	}
+
+	private SqmCaseSearched(
+			SessionFactoryImplementor sessionFactory,
+			List<WhenFragment> whenFragments,
+			SqmExpression otherwise,
+			ExpressableType expressableType,
+			ExpressableType impliedType) {
+		super( sessionFactory );
+		this.whenFragments = whenFragments;
+		this.otherwise = otherwise;
+		this.expressableType = expressableType;
+		this.impliedType = impliedType;
+	}
 
 	public List<WhenFragment> getWhenFragments() {
 		return whenFragments;
@@ -39,6 +60,30 @@ public class SqmCaseSearched implements ImpliedTypeSqmExpression {
 	public void otherwise(SqmExpression otherwiseExpression) {
 		this.otherwise = otherwiseExpression;
 		// todo : inject implied type?
+	}
+
+	@Override
+	public CriteriaBuilder.Case when(Expression condition, Object result) {
+		when( (SqmPredicate) getCriteriaBuilder().wrap( condition ), (SqmExpression) getCriteriaBuilder().literal( result ) );
+		return this;
+	}
+
+	@Override
+	public CriteriaBuilder.Case when(Expression condition, Expression result) {
+		when( (SqmPredicate) getCriteriaBuilder().wrap( condition ), (SqmExpression) result );
+		return this;
+	}
+
+	@Override
+	public Expression otherwise(Object result) {
+		otherwise( getCriteriaBuilder().literal( result ) );
+		return this;
+	}
+
+	@Override
+	public Expression otherwise(Expression result) {
+		otherwise( (SqmExpression) result );
+		return this;
 	}
 
 	@Override
@@ -65,6 +110,24 @@ public class SqmCaseSearched implements ImpliedTypeSqmExpression {
 		}
 
 		return expressableType;
+	}
+
+	@Override
+	public SqmCaseSearched copy(SqmCopyContext context) {
+		List<WhenFragment> newWhenFragments = new ArrayList<>( whenFragments.size() );
+		for ( WhenFragment fragment : whenFragments ) {
+			newWhenFragments.add( new WhenFragment(
+				fragment.predicate.copy( context ),
+				fragment.result.copy( context )
+			));
+		}
+		return new SqmCaseSearched(
+                getSessionFactory(),
+				newWhenFragments,
+				otherwise.copy( context ),
+				expressableType,
+				impliedType
+		);
 	}
 
 	@Override

@@ -8,6 +8,7 @@ package org.hibernate.query.sqm.produce.function.spi;
 
 import java.util.List;
 
+import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.metamodel.model.domain.spi.AllowableFunctionReturnType;
 import org.hibernate.query.sqm.produce.function.SqmFunctionTemplate;
 import org.hibernate.query.sqm.produce.spi.TrimSpecificationExpressionWrapper;
@@ -34,14 +35,16 @@ public class AnsiTrimFunctionTemplate implements SqmFunctionTemplate {
 
 	@Override
 	public SqmFunction makeSqmFunctionExpression(
+            SessionFactoryImplementor sessionFactory,
 			List<SqmExpression> arguments,
-			AllowableFunctionReturnType impliedResultType) {
+            AllowableFunctionReturnType impliedResultType) {
 		// 1) LEADING/TRAILING/BOTH
 		// 2) trim char
 		// 3) source
 		assert arguments.size() == 3;
 
 		return new SqmTrimFunction(
+				sessionFactory,
 				StandardSpiBasicTypes.STRING,
 				( (TrimSpecificationExpressionWrapper) arguments.get( 0 ) ).getSpecification(),
 				arguments.get( 1 ),

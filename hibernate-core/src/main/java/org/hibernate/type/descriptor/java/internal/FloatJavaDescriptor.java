@@ -10,11 +10,15 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.sql.Types;
 
+import org.hibernate.engine.spi.SessionFactoryImplementor;
+import org.hibernate.query.sqm.tree.expression.SqmLiteral;
+import org.hibernate.query.sqm.tree.expression.SqmLiteralFloat;
 import org.hibernate.type.descriptor.java.spi.AbstractNumericJavaDescriptor;
 import org.hibernate.type.descriptor.java.spi.Primitive;
 import org.hibernate.type.descriptor.spi.JdbcRecommendedSqlTypeMappingContext;
 import org.hibernate.type.descriptor.spi.WrapperOptions;
 import org.hibernate.type.descriptor.sql.spi.SqlTypeDescriptor;
+import org.hibernate.type.spi.BasicType;
 
 /**
  * Descriptor for {@link Float} handling.
@@ -33,6 +37,11 @@ public class FloatJavaDescriptor extends AbstractNumericJavaDescriptor<Float> im
 	@Override
 	public SqlTypeDescriptor getJdbcRecommendedSqlType(JdbcRecommendedSqlTypeMappingContext context) {
 		return context.getTypeConfiguration().getSqlTypeDescriptorRegistry().getDescriptor( Types.FLOAT );
+	}
+
+	@Override
+	public SqmLiteral<Float> createLiteralExpression(SessionFactoryImplementor sessionFactory, BasicType<Float> basicType, Float value) {
+		return new SqmLiteralFloat( sessionFactory, value, basicType );
 	}
 
 	@Override

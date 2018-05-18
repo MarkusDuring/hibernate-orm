@@ -6,6 +6,7 @@
  */
 package org.hibernate.query.sqm.tree.internal;
 
+import org.hibernate.query.sqm.tree.expression.SqmAnonymousParameter;
 import org.hibernate.query.sqm.tree.expression.SqmNamedParameter;
 import org.hibernate.query.sqm.tree.expression.SqmPositionalParameter;
 
@@ -15,4 +16,5 @@ import org.hibernate.query.sqm.tree.expression.SqmPositionalParameter;
 public interface ParameterCollector {
 	void addParameter(SqmNamedParameter parameter);
 	void addParameter(SqmPositionalParameter parameter);
+	void addParameter(SqmAnonymousParameter parameter);
 }

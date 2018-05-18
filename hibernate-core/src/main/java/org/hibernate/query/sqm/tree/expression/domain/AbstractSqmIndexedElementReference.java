@@ -10,6 +10,7 @@ import org.hibernate.metamodel.model.domain.spi.CollectionElement;
 import org.hibernate.metamodel.model.domain.spi.EntityDescriptor;
 import org.hibernate.metamodel.model.domain.spi.Navigable;
 import org.hibernate.query.NavigablePath;
+import org.hibernate.query.sqm.produce.spi.SqmCreationContext;
 import org.hibernate.query.sqm.tree.expression.SqmExpression;
 import org.hibernate.sql.ast.produce.metamodel.spi.NavigableContainerReferenceInfo;
 
@@ -23,9 +24,8 @@ public abstract class AbstractSqmIndexedElementReference
 	private final NavigablePath propertyPath;
 
 	public AbstractSqmIndexedElementReference(
-			SqmPluralAttributeReference pluralAttributeBinding,
-			SqmExpression indexSelectionExpression) {
-		super( pluralAttributeBinding );
+			SqmPluralAttributeReference pluralAttributeBinding, SqmExpression indexSelectionExpression, SqmCreationContext creationContext) {
+		super( pluralAttributeBinding, creationContext );
 		this.indexSelectionExpression = indexSelectionExpression;
 		this.propertyPath = pluralAttributeBinding.getNavigablePath().append( "{indexes}" );
 	}
@@ -58,6 +58,10 @@ public abstract class AbstractSqmIndexedElementReference
 	@Override
 	public NavigablePath getNavigablePath() {
 		return propertyPath;
+	}
+
+	protected SqmExpression getIndexSelectionExpression() {
+		return indexSelectionExpression;
 	}
 
 	@Override

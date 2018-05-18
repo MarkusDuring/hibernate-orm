@@ -12,6 +12,7 @@ import org.hibernate.query.sqm.NotYetImplementedException;
 import org.hibernate.query.sqm.consume.spi.SemanticQueryWalker;
 import org.hibernate.query.sqm.produce.path.spi.SemanticPathPart;
 import org.hibernate.query.sqm.produce.spi.SqmCreationContext;
+import org.hibernate.query.sqm.tree.SqmCopyContext;
 import org.hibernate.query.sqm.tree.expression.SqmExpression;
 import org.hibernate.query.sqm.tree.from.SqmNavigableJoin;
 
@@ -30,9 +31,38 @@ public class SqmPluralAttributeReference
 			SqmNavigableContainerReference containerReference,
 			PluralPersistentAttribute attribute,
 			SqmCreationContext creationContext) {
-		super( containerReference, attribute );
+		super( containerReference, attribute, creationContext );
 
 		this.join = creationContext.getCurrentFromElementBuilder().buildNavigableJoin( this );
+	}
+
+	private SqmPluralAttributeReference(
+			SqmNavigableContainerReference containerReference,
+			PluralPersistentAttribute attribute,
+			SqmCreationContext creationContext,
+			SqmNavigableJoin join) {
+		super( containerReference, attribute, creationContext );
+
+		this.join = join;
+	}
+
+	@Override
+	public SqmPluralAttributeReference copy(SqmCopyContext context) {
+		SqmNavigableJoin copiedJoin = context.getCopy( join );
+		if ( copiedJoin == null ) {
+			return new SqmPluralAttributeReference(
+					getSourceReference(),
+					getReferencedNavigable(),
+					context.getCreationContext()
+			);
+		}
+
+		return new SqmPluralAttributeReference(
+				getSourceReference(),
+				getReferencedNavigable(),
+				context.getCreationContext(),
+				copiedJoin
+		);
 	}
 
 	@Override
@@ -66,6 +96,11 @@ public class SqmPluralAttributeReference
 	}
 
 	@Override
+	protected boolean canBeDereferenced() {
+		return true;
+	}
+
+	@Override
 	public SemanticPathPart resolvePathPart(
 			String name,
 			String currentContextKey,
@@ -82,6 +117,7 @@ public class SqmPluralAttributeReference
 			String currentContextKey,
 			boolean isTerminal,
 			SqmCreationContext context) {
+		// todo : re-enable org.hibernate.orm.test.jpa.ql.LenientJpqlComplianceTests.testIndexedElementReference() when implementing this
 		return null;
 	}
 }

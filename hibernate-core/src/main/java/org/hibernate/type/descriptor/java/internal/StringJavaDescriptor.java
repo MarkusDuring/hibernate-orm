@@ -13,10 +13,14 @@ import java.sql.Types;
 
 import org.hibernate.engine.jdbc.CharacterStream;
 import org.hibernate.engine.jdbc.internal.CharacterStreamImpl;
+import org.hibernate.engine.spi.SessionFactoryImplementor;
+import org.hibernate.query.sqm.tree.expression.SqmLiteral;
+import org.hibernate.query.sqm.tree.expression.SqmLiteralString;
 import org.hibernate.type.descriptor.java.spi.AbstractBasicJavaDescriptor;
 import org.hibernate.type.descriptor.spi.JdbcRecommendedSqlTypeMappingContext;
 import org.hibernate.type.descriptor.spi.WrapperOptions;
 import org.hibernate.type.descriptor.sql.spi.SqlTypeDescriptor;
+import org.hibernate.type.spi.BasicType;
 
 /**
  * Descriptor for {@link String} handling.
@@ -47,6 +51,11 @@ public class StringJavaDescriptor extends AbstractBasicJavaDescriptor<String> {
 		}
 
 		return context.getTypeConfiguration().getSqlTypeDescriptorRegistry().getDescriptor( jdbcTypeCode );
+	}
+
+	@Override
+	public SqmLiteral<String> createLiteralExpression(SessionFactoryImplementor sessionFactory, BasicType<String> basicType, String value) {
+		return new SqmLiteralString( sessionFactory, value, basicType );
 	}
 
 	public String toString(String value) {

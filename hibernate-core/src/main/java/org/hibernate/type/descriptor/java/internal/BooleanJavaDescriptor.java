@@ -6,11 +6,16 @@
  */
 package org.hibernate.type.descriptor.java.internal;
 
+import org.hibernate.engine.spi.SessionFactoryImplementor;
+import org.hibernate.query.sqm.tree.expression.SqmLiteral;
+import org.hibernate.query.sqm.tree.expression.SqmLiteralFalse;
+import org.hibernate.query.sqm.tree.expression.SqmLiteralTrue;
 import org.hibernate.type.descriptor.java.spi.AbstractBasicJavaDescriptor;
 import org.hibernate.type.descriptor.java.spi.Primitive;
 import org.hibernate.type.descriptor.spi.JdbcRecommendedSqlTypeMappingContext;
 import org.hibernate.type.descriptor.spi.WrapperOptions;
 import org.hibernate.type.descriptor.sql.spi.SqlTypeDescriptor;
+import org.hibernate.type.spi.BasicType;
 
 import static java.lang.Boolean.FALSE;
 import static java.lang.Boolean.TRUE;
@@ -41,6 +46,15 @@ public class BooleanJavaDescriptor extends AbstractBasicJavaDescriptor<Boolean> 
 	@Override
 	public Boolean fromString(String string) {
 		return Boolean.valueOf( string );
+	}
+
+	@Override
+	public SqmLiteral<Boolean> createLiteralExpression(SessionFactoryImplementor sessionFactory, BasicType<Boolean> basicType, Boolean value) {
+		if ( value ) {
+			return new SqmLiteralTrue( sessionFactory, basicType );
+		} else {
+			return new SqmLiteralFalse( sessionFactory, basicType );
+		}
 	}
 
 	public int toInt(Boolean value) {

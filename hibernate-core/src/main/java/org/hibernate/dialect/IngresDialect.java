@@ -134,10 +134,10 @@ public class IngresDialect extends Dialect {
 		registry.register(
 				"locate",
 				new LocateEmulationUsingPositionAndSubstring(
-						(reg, type, arguments) -> reg.findFunctionTemplate( "substring" ).makeSqmFunctionExpression(
-								arguments,
-								type
-						)
+						(sessionFactory, reg, type, arguments) -> reg.findFunctionTemplate( "substring" ).makeSqmFunctionExpression(
+								sessionFactory,
+                                arguments,
+                                type)
 				)
 		);
 

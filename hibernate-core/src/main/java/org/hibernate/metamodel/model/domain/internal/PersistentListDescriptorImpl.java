@@ -38,6 +38,14 @@ public class PersistentListDescriptorImpl extends AbstractPersistentCollectionDe
 		super( bootProperty, runtimeContainer, CollectionClassification.LIST, context );
 	}
 
+	public PersistentListDescriptorImpl(
+			Property pluralProperty,
+			ManagedTypeDescriptor runtimeContainer,
+			CollectionClassification classification,
+			RuntimeModelCreationContext creationContext) {
+		super(pluralProperty, runtimeContainer, classification, creationContext);
+	}
+
 	@Override
 	protected CollectionJavaDescriptor resolveCollectionJtd(RuntimeModelCreationContext creationContext) {
 		return findCollectionJtd( List.class, creationContext );

@@ -9,11 +9,15 @@ package org.hibernate.type.descriptor.java.internal;
 import java.sql.Types;
 
 import org.hibernate.HibernateException;
+import org.hibernate.engine.spi.SessionFactoryImplementor;
+import org.hibernate.query.sqm.tree.expression.SqmLiteral;
+import org.hibernate.query.sqm.tree.expression.SqmLiteralCharacter;
 import org.hibernate.type.descriptor.java.spi.AbstractBasicJavaDescriptor;
 import org.hibernate.type.descriptor.java.spi.Primitive;
 import org.hibernate.type.descriptor.spi.JdbcRecommendedSqlTypeMappingContext;
 import org.hibernate.type.descriptor.spi.WrapperOptions;
 import org.hibernate.type.descriptor.sql.spi.SqlTypeDescriptor;
+import org.hibernate.type.spi.BasicType;
 
 /**
  * Descriptor for {@link Character} handling.
@@ -33,9 +37,15 @@ public class CharacterJavaDescriptor extends AbstractBasicJavaDescriptor<Charact
 	}
 
 	@Override
+	public SqmLiteral<Character> createLiteralExpression(SessionFactoryImplementor sessionFactory, BasicType<Character> basicType, Character value) {
+		return new SqmLiteralCharacter( sessionFactory, value, basicType );
+	}
+
+	@Override
 	public String toString(Character value) {
 		return value.toString();
 	}
+
 	@Override
 	public Character fromString(String string) {
 		if ( string.length() != 1 ) {

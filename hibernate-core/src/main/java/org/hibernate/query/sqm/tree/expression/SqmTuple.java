@@ -7,16 +7,16 @@
 package org.hibernate.query.sqm.tree.expression;
 
 import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
+import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.query.sqm.QueryException;
 import org.hibernate.query.sqm.consume.spi.SemanticQueryWalker;
+import org.hibernate.query.sqm.tree.SqmCopyContext;
 import org.hibernate.sql.ast.produce.metamodel.spi.ExpressableType;
-import org.hibernate.sql.ast.tree.spi.expression.Expression;
-import org.hibernate.sql.results.spi.QueryResult;
-import org.hibernate.sql.results.spi.QueryResultCreationContext;
 import org.hibernate.type.descriptor.java.spi.JavaTypeDescriptor;
 
 
@@ -26,18 +26,19 @@ import org.hibernate.type.descriptor.java.spi.JavaTypeDescriptor;
  *
  * @author Steve Ebersole
  */
-public class SqmTuple implements SqmExpression {
+public class SqmTuple extends AbstractSqmExpression implements SqmExpression {
 	private final List<SqmExpression> groupedExpressions;
 
-	public SqmTuple(SqmExpression groupedExpression) {
-		this( Collections.singletonList( groupedExpression ) );
+	public SqmTuple(SessionFactoryImplementor sessionFactory, SqmExpression groupedExpression) {
+		this( sessionFactory, Collections.singletonList( groupedExpression ) );
 	}
 
-	public SqmTuple(SqmExpression... groupedExpressions) {
-		this( Arrays.asList( groupedExpressions ));
+	public SqmTuple(SessionFactoryImplementor sessionFactory, SqmExpression... groupedExpressions) {
+		this( sessionFactory, Arrays.asList( groupedExpressions ));
 	}
 
-	public SqmTuple(List<SqmExpression> groupedExpressions) {
+	private SqmTuple(SessionFactoryImplementor sessionFactory, List<SqmExpression> groupedExpressions) {
+		super( sessionFactory );
 		if ( groupedExpressions.isEmpty() ) {
 			throw new QueryException( "tuple grouping cannot be constructed over zero expressions" );
 		}
@@ -59,6 +60,19 @@ public class SqmTuple implements SqmExpression {
 	@Override
 	public ExpressableType getInferableType() {
 		return null;
+	}
+
+	@Override
+	public SqmTuple copy(SqmCopyContext context) {
+		List<SqmExpression> newGroupedExpressions = new ArrayList<>( groupedExpressions.size() );
+		for ( SqmExpression groupedExpression : groupedExpressions ) {
+			newGroupedExpressions.add( groupedExpression.copy( context ) );
+		}
+
+		return new SqmTuple(
+                getSessionFactory(),
+				newGroupedExpressions
+		);
 	}
 
 	@Override

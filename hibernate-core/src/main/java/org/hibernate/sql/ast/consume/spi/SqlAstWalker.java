@@ -32,6 +32,7 @@ import org.hibernate.sql.ast.tree.spi.expression.LowerFunction;
 import org.hibernate.sql.ast.tree.spi.expression.MaxFunction;
 import org.hibernate.sql.ast.tree.spi.expression.MinFunction;
 import org.hibernate.sql.ast.tree.spi.expression.ModFunction;
+import org.hibernate.sql.ast.tree.spi.expression.AnonymousParameter;
 import org.hibernate.sql.ast.tree.spi.expression.NamedParameter;
 import org.hibernate.sql.ast.tree.spi.expression.NonStandardFunction;
 import org.hibernate.sql.ast.tree.spi.expression.NullifFunction;
@@ -48,6 +49,7 @@ import org.hibernate.sql.ast.tree.spi.from.TableGroupJoin;
 import org.hibernate.sql.ast.tree.spi.from.TableReference;
 import org.hibernate.sql.ast.tree.spi.from.TableReferenceJoin;
 import org.hibernate.sql.ast.tree.spi.from.TableSpace;
+import org.hibernate.sql.ast.tree.spi.group.GroupSpecification;
 import org.hibernate.sql.ast.tree.spi.predicate.BetweenPredicate;
 import org.hibernate.sql.ast.tree.spi.predicate.FilterPredicate;
 import org.hibernate.sql.ast.tree.spi.predicate.GroupedPredicate;
@@ -71,6 +73,8 @@ public interface SqlAstWalker {
 	void visitAssignment(Assignment assignment);
 
 	void visitQuerySpec(QuerySpec querySpec);
+
+	void visitGroupSpecification(GroupSpecification groupSpecification);
 
 	void visitSortSpecification(SortSpecification sortSpecification);
 
@@ -111,6 +115,8 @@ public interface SqlAstWalker {
 	void visitCaseSimpleExpression(CaseSimpleExpression caseSimpleExpression);
 
 	void visitCoalesceFunction(CoalesceFunction coalesceExpression);
+
+	void visitAnonymousParameter(AnonymousParameter anonymousParameter);
 
 	void visitNamedParameter(NamedParameter namedParameter);
 

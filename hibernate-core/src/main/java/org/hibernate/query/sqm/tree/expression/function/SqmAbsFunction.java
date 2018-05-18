@@ -6,11 +6,13 @@
  */
 package org.hibernate.query.sqm.tree.expression.function;
 
-import java.util.Locale;
-
+import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.metamodel.model.domain.spi.AllowableFunctionReturnType;
 import org.hibernate.query.sqm.consume.spi.SemanticQueryWalker;
+import org.hibernate.query.sqm.tree.SqmCopyContext;
 import org.hibernate.query.sqm.tree.expression.SqmExpression;
+
+import java.util.Locale;
 
 /**
  * @author Steve Ebersole
@@ -20,8 +22,8 @@ public class SqmAbsFunction extends AbstractSqmFunction {
 
 	private final SqmExpression argument;
 
-	public SqmAbsFunction(SqmExpression argument, AllowableFunctionReturnType resultType) {
-		super( resultType );
+	public SqmAbsFunction(SessionFactoryImplementor sessionFactory, SqmExpression argument, AllowableFunctionReturnType resultType) {
+		super( sessionFactory, resultType );
 		this.argument = argument;
 	}
 
@@ -37,6 +39,15 @@ public class SqmAbsFunction extends AbstractSqmFunction {
 	@Override
 	public boolean hasArguments() {
 		return true;
+	}
+
+	@Override
+	public SqmAbsFunction copy(SqmCopyContext context) {
+		return new SqmAbsFunction(
+                getSessionFactory(),
+				argument.copy( context ),
+				getExpressableType()
+		);
 	}
 
 	@Override

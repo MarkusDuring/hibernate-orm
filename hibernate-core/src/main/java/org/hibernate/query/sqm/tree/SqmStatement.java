@@ -23,4 +23,11 @@ public interface SqmStatement extends SqmNode {
 	//		the details.  Review this an decide if this is a problem or ok
 
 	Set<SqmParameter> getQueryParameters();
+
+	void wrapUp();
+
+	SqmStatement copy();
+
+	@Override
+	SqmStatement copy(SqmCopyContext context);
 }

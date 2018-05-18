@@ -9,6 +9,7 @@ package org.hibernate.query.sqm.tree.expression.domain;
 import org.hibernate.metamodel.model.domain.internal.SingularPersistentAttributeEntity;
 import org.hibernate.query.sqm.consume.spi.SemanticQueryWalker;
 import org.hibernate.query.sqm.produce.spi.SqmCreationContext;
+import org.hibernate.query.sqm.tree.SqmCopyContext;
 import org.hibernate.query.sqm.tree.from.SqmFrom;
 import org.hibernate.query.sqm.tree.from.SqmNavigableJoin;
 import org.hibernate.sql.ast.produce.metamodel.spi.EntityValuedExpressableType;
@@ -52,9 +53,36 @@ public class SqmSingularAttributeReferenceEntity
 			SqmNavigableContainerReference containerReference,
 			SingularPersistentAttributeEntity referencedAttribute,
 			SqmCreationContext creationContext) {
-		super( containerReference, referencedAttribute );
+		super( containerReference, referencedAttribute, creationContext );
 		this.navigableJoin = creationContext.getCurrentFromElementBuilder()
 				.buildNavigableJoin( this );
+	}
+
+	private SqmSingularAttributeReferenceEntity(
+			SqmNavigableContainerReference containerReference,
+			SingularPersistentAttributeEntity referencedAttribute,
+			SqmCreationContext creationContext,
+			SqmNavigableJoin navigableJoin) {
+		super( containerReference, referencedAttribute, creationContext );
+		this.navigableJoin = navigableJoin;
+	}
+
+	@Override
+	public SqmSingularAttributeReferenceEntity copy(SqmCopyContext context) {
+		SqmNavigableJoin copiedJoin = context.getCopy( navigableJoin );
+		if ( copiedJoin == null ) {
+			return new SqmSingularAttributeReferenceEntity(
+					getSourceReference(),
+					getReferencedNavigable(),
+					context.getCreationContext()
+			);
+		}
+		return new SqmSingularAttributeReferenceEntity(
+				getSourceReference(),
+				getReferencedNavigable(),
+				context.getCreationContext(),
+				copiedJoin
+		);
 	}
 
 	@Override
@@ -85,5 +113,10 @@ public class SqmSingularAttributeReferenceEntity
 	@Override
 	public PersistenceType getPersistenceType() {
 		return super.getExpressableType().getPersistenceType();
+	}
+
+	@Override
+	protected boolean canBeDereferenced() {
+		return true;
 	}
 }

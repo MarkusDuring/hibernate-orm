@@ -8,6 +8,7 @@ package org.hibernate.dialect.function;
 
 import java.util.List;
 
+import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.metamodel.model.domain.spi.AllowableFunctionReturnType;
 import org.hibernate.query.sqm.produce.function.StandardArgumentsValidators;
 import org.hibernate.query.sqm.produce.function.spi.AbstractSqmFunctionTemplate;
@@ -33,22 +34,25 @@ public class CoalesceEmulationUsingNvl
 
 	@Override
 	protected SqmExpression generateSqmFunctionExpression(
+            SessionFactoryImplementor sessionFactory,
 			List<SqmExpression> arguments,
 			AllowableFunctionReturnType impliedResultType) {
 		SqmExpression nvl = nvl(
+				sessionFactory,
 				arguments.get( arguments.size() - 1 ),
 				arguments.get( arguments.size() - 2 )
 		);
 
 		for ( int i = arguments.size() - 3; i >= 0 ; i-- ) {
-			nvl = nvl( arguments.get( i ), nvl );
+			nvl = nvl( sessionFactory, arguments.get( i ), nvl );
 		}
 
 		return nvl;
 	}
 
-	protected SqmExpression nvl(SqmExpression arg1, SqmExpression arg2) {
+	protected SqmExpression nvl(SessionFactoryImplementor sessionFactory, SqmExpression arg1, SqmExpression arg2) {
 		return new NvlFunctionTemplate.SqmNvlFunction(
+				sessionFactory,
 				arg1,
 				arg2,
 				(AllowableFunctionReturnType) (arg1.getExpressableType() == null

@@ -33,7 +33,8 @@ public interface EntityIdentifierComposite<O,J>
 			SqmCreationContext creationContext) {
 		return new SqmEntityIdentifierReferenceComposite(
 				(SqmEntityTypedReference) containerReference,
-				this
+				this,
+				creationContext
 		);
 	}
 

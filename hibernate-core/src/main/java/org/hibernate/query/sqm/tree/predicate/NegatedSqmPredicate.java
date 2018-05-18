@@ -6,20 +6,46 @@
  */
 package org.hibernate.query.sqm.tree.predicate;
 
+import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.query.sqm.consume.spi.SemanticQueryWalker;
+import org.hibernate.query.sqm.tree.SqmCopyContext;
+
+import javax.persistence.criteria.Expression;
+import java.util.List;
 
 /**
  * @author Steve Ebersole
  */
-public class NegatedSqmPredicate implements SqmPredicate {
+public class NegatedSqmPredicate extends AbstractSqmPredicate implements SqmPredicate {
 	private final SqmPredicate wrappedPredicate;
 
-	public NegatedSqmPredicate(SqmPredicate wrappedPredicate) {
+	public NegatedSqmPredicate(SessionFactoryImplementor sessionFactory, SqmPredicate wrappedPredicate) {
+		super( sessionFactory );
 		this.wrappedPredicate = wrappedPredicate;
 	}
 
 	public SqmPredicate getWrappedPredicate() {
 		return wrappedPredicate;
+	}
+
+	@Override
+	public NegatedSqmPredicate copy(SqmCopyContext context) {
+		return new NegatedSqmPredicate( sessionFactory, wrappedPredicate.copy( context ) );
+	}
+
+	@Override
+	public boolean isNegated() {
+		return true;
+	}
+
+	@Override
+	public SqmPredicate not() {
+		return wrappedPredicate;
+	}
+
+	@Override
+	public List<Expression<Boolean>> getExpressions() {
+		return wrappedPredicate.getExpressions();
 	}
 
 	@Override

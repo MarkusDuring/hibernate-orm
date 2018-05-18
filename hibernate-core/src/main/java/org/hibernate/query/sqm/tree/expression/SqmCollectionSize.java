@@ -6,7 +6,9 @@
  */
 package org.hibernate.query.sqm.tree.expression;
 
+import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.query.sqm.consume.spi.SemanticQueryWalker;
+import org.hibernate.query.sqm.tree.SqmCopyContext;
 import org.hibernate.query.sqm.tree.expression.domain.SqmPluralAttributeReference;
 import org.hibernate.NotYetImplementedFor6Exception;
 import org.hibernate.sql.ast.produce.metamodel.spi.BasicValuedExpressableType;
@@ -21,11 +23,15 @@ import org.hibernate.type.descriptor.java.spi.JavaTypeDescriptor;
  * @author Steve Ebersole
  * @author Gunnar Morling
  */
-public class SqmCollectionSize implements SqmExpression, QueryResultProducer {
+public class SqmCollectionSize extends AbstractSqmExpression implements SqmExpression, QueryResultProducer {
 	private final SqmPluralAttributeReference pluralAttributeBinding;
 	private final BasicValuedExpressableType sizeType;
 
-	public SqmCollectionSize(SqmPluralAttributeReference pluralAttributeBinding, BasicValuedExpressableType sizeType) {
+	public SqmCollectionSize(
+			SessionFactoryImplementor sessionFactory,
+			SqmPluralAttributeReference pluralAttributeBinding,
+			BasicValuedExpressableType sizeType) {
+		super( sessionFactory );
 		this.pluralAttributeBinding = pluralAttributeBinding;
 		this.sizeType = sizeType;
 	}
@@ -42,6 +48,15 @@ public class SqmCollectionSize implements SqmExpression, QueryResultProducer {
 	@Override
 	public BasicValuedExpressableType getInferableType() {
 		return getExpressableType();
+	}
+
+	@Override
+	public SqmCollectionSize copy(SqmCopyContext context) {
+		return new SqmCollectionSize(
+                getSessionFactory(),
+				pluralAttributeBinding.copy( context ),
+				sizeType
+		);
 	}
 
 	@Override

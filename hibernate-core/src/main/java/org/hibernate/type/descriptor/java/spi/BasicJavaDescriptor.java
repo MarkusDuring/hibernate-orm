@@ -6,7 +6,10 @@
  */
 package org.hibernate.type.descriptor.java.spi;
 
+import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.metamodel.model.domain.spi.VersionSupport;
+import org.hibernate.query.sqm.tree.expression.SqmLiteral;
+import org.hibernate.type.spi.BasicType;
 
 /**
  * @author Steve Ebersole
@@ -21,4 +24,6 @@ public interface BasicJavaDescriptor<T> extends JavaTypeDescriptor<T> {
 	default VersionSupport<T> getVersionSupport() {
 		return null;
 	}
+
+	SqmLiteral<T> createLiteralExpression(SessionFactoryImplementor sessionFactory, BasicType<T> basicType, T value);
 }

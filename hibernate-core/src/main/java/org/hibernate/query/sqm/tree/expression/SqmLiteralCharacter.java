@@ -6,16 +6,22 @@
  */
 package org.hibernate.query.sqm.tree.expression;
 
-import org.hibernate.sql.ast.produce.metamodel.spi.BasicValuedExpressableType;
+import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.query.sqm.consume.spi.SemanticQueryWalker;
+import org.hibernate.query.sqm.tree.SqmCopyContext;
+import org.hibernate.sql.ast.produce.metamodel.spi.BasicValuedExpressableType;
 
 /**
  * @author Steve Ebersole
  */
 public class SqmLiteralCharacter extends AbstractSqmLiteral<Character> {
-	public SqmLiteralCharacter(Character value, BasicValuedExpressableType type) {
-		super( value, type );
+	public SqmLiteralCharacter(SessionFactoryImplementor sessionFactory, Character value, BasicValuedExpressableType type) {
+		super( sessionFactory, value, type );
+	}
 
+	@Override
+	public SqmLiteralCharacter copy(SqmCopyContext context) {
+		return this;
 	}
 
 	@Override

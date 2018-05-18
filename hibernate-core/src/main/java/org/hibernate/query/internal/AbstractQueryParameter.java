@@ -28,7 +28,7 @@ public abstract class AbstractQueryParameter<T> implements QueryParameterImpleme
 		this.anticipatedType = anticipatedType;
 	}
 
-	@Override
+//	@Override
 	public void allowMultiValuedBinding() {
 		log.debugf( "QueryParameter#allowMultiValuedBinding() called" );
 		this.allowMultiValuedBinding = true;

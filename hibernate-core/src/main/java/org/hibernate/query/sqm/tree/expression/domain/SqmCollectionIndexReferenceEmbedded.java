@@ -7,6 +7,8 @@
 package org.hibernate.query.sqm.tree.expression.domain;
 
 import org.hibernate.metamodel.model.domain.spi.CollectionIndexEmbedded;
+import org.hibernate.query.sqm.produce.spi.SqmCreationContext;
+import org.hibernate.query.sqm.tree.SqmCopyContext;
 import org.hibernate.query.sqm.tree.from.SqmFrom;
 
 /**
@@ -16,8 +18,16 @@ public class SqmCollectionIndexReferenceEmbedded
 		extends AbstractSqmCollectionIndexReference
 		implements SqmEmbeddableTypedReference {
 
-	public SqmCollectionIndexReferenceEmbedded(SqmPluralAttributeReference pluralAttributeBinding) {
-		super( pluralAttributeBinding );
+	public SqmCollectionIndexReferenceEmbedded(SqmPluralAttributeReference pluralAttributeBinding, SqmCreationContext creationContext) {
+		super( pluralAttributeBinding, creationContext );
+	}
+
+	@Override
+	public SqmCollectionIndexReferenceEmbedded copy(SqmCopyContext context) {
+		return new SqmCollectionIndexReferenceEmbedded(
+				getPluralAttributeReference().copy( context ),
+				context.getCreationContext()
+		);
 	}
 
 	@Override

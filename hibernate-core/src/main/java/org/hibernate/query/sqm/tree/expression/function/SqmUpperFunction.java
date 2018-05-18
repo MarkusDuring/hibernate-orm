@@ -6,11 +6,13 @@
  */
 package org.hibernate.query.sqm.tree.expression.function;
 
-import java.util.Locale;
-
-import org.hibernate.sql.ast.produce.metamodel.spi.BasicValuedExpressableType;
+import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.query.sqm.consume.spi.SemanticQueryWalker;
+import org.hibernate.query.sqm.tree.SqmCopyContext;
 import org.hibernate.query.sqm.tree.expression.SqmExpression;
+import org.hibernate.sql.ast.produce.metamodel.spi.BasicValuedExpressableType;
+
+import java.util.Locale;
 
 /**
  * @author Steve Ebersole
@@ -20,8 +22,8 @@ public class SqmUpperFunction extends AbstractSqmFunction {
 
 	private SqmExpression argument;
 
-	public SqmUpperFunction(BasicValuedExpressableType resultType, SqmExpression argument) {
-		super( resultType );
+	public SqmUpperFunction(SessionFactoryImplementor sessionFactory, BasicValuedExpressableType resultType, SqmExpression argument) {
+		super( sessionFactory, resultType );
 		this.argument = argument;
 
 		assert argument != null;
@@ -39,6 +41,15 @@ public class SqmUpperFunction extends AbstractSqmFunction {
 	@Override
 	public boolean hasArguments() {
 		return true;
+	}
+
+	@Override
+	public SqmUpperFunction copy(SqmCopyContext context) {
+		return new SqmUpperFunction(
+                getSessionFactory(),
+				(BasicValuedExpressableType) getExpressableType(),
+				argument.copy( context )
+		);
 	}
 
 	@Override

@@ -10,7 +10,6 @@ import javax.persistence.criteria.CriteriaDelete;
 import javax.persistence.criteria.CriteriaQuery;
 import javax.persistence.criteria.CriteriaUpdate;
 
-import org.hibernate.NotYetImplementedFor6Exception;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.query.sqm.InterpretationException;
 import org.hibernate.query.sqm.QueryException;
@@ -60,16 +59,16 @@ public class SemanticQueryProducerImpl implements SemanticQueryProducer {
 
 	@Override
 	public SqmSelectStatement interpret(CriteriaQuery query) {
-		throw new NotYetImplementedFor6Exception(  );
+		return ((SqmSelectStatement) query).copy();
 	}
 
 	@Override
 	public SqmDeleteStatement interpret(CriteriaDelete criteria) {
-		throw new NotYetImplementedFor6Exception(  );
+		return ((SqmDeleteStatement) criteria).copy();
 	}
 
 	@Override
 	public SqmUpdateStatement interpret(CriteriaUpdate criteria) {
-		throw new NotYetImplementedFor6Exception(  );
+		return ((SqmUpdateStatement) criteria).copy();
 	}
 }

@@ -7,11 +7,13 @@
 package org.hibernate.query.sqm.tree.select;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.query.sqm.consume.spi.SemanticQueryWalker;
+import org.hibernate.query.sqm.tree.SqmCopyContext;
 import org.hibernate.query.sqm.tree.expression.SqmExpression;
 import org.hibernate.sql.ast.tree.spi.expression.instantiation.DynamicInstantiation;
 import org.hibernate.sql.ast.tree.spi.expression.instantiation.DynamicInstantiationNature;
@@ -19,6 +21,9 @@ import org.hibernate.sql.results.spi.QueryResultProducer;
 import org.hibernate.type.descriptor.java.spi.JavaTypeDescriptor;
 
 import org.jboss.logging.Logger;
+
+import javax.persistence.criteria.CompoundSelection;
+import javax.persistence.criteria.Selection;
 
 import static org.hibernate.sql.ast.tree.spi.expression.instantiation.DynamicInstantiationNature.CLASS;
 import static org.hibernate.sql.ast.tree.spi.expression.instantiation.DynamicInstantiationNature.LIST;
@@ -29,8 +34,8 @@ import static org.hibernate.sql.ast.tree.spi.expression.instantiation.DynamicIns
  *
  * @author Steve Ebersole
  */
-public class SqmDynamicInstantiation
-		implements SqmSelectableNode, SqmAliasedExpressionContainer<SqmDynamicInstantiationArgument> {
+public class SqmDynamicInstantiation extends SqmSelectionBase
+		implements SqmSelectableNode, SqmAliasedExpressionContainer<SqmSelectionBase>, CompoundSelection {
 
 	private static final Logger log = Logger.getLogger( SqmDynamicInstantiation.class );
 
@@ -49,17 +54,37 @@ public class SqmDynamicInstantiation
 	}
 
 	private final SqmDynamicInstantiationTarget instantiationTarget;
-	private List<SqmDynamicInstantiationArgument> arguments;
+	private List<SqmSelectionBase> arguments;
 
 	private SqmDynamicInstantiation(SqmDynamicInstantiationTarget instantiationTarget) {
 		this.instantiationTarget = instantiationTarget;
+	}
+
+	private SqmDynamicInstantiation(String alias, SqmDynamicInstantiationTarget instantiationTarget, List<SqmSelectionBase> arguments) {
+		super(alias);
+		this.instantiationTarget = instantiationTarget;
+		this.arguments = arguments;
+	}
+
+	@Override
+	public SqmDynamicInstantiation copy(SqmCopyContext context) {
+		List<SqmSelectionBase> newArguments = new ArrayList<>( arguments.size() );
+		for ( SqmSelectionBase argument : arguments ) {
+			newArguments.add( argument.copy( context ) );
+		}
+
+		return new SqmDynamicInstantiation(
+				getAlias(),
+				instantiationTarget,
+				newArguments
+		);
 	}
 
 	public SqmDynamicInstantiationTarget getInstantiationTarget() {
 		return instantiationTarget;
 	}
 
-	public List<SqmDynamicInstantiationArgument> getArguments() {
+	public List<SqmSelectionBase> getArguments() {
 		return arguments;
 	}
 
@@ -69,11 +94,21 @@ public class SqmDynamicInstantiation
 	}
 
 	@Override
+	public Class getJavaType() {
+		return getJavaTypeDescriptor().getJavaType();
+	}
+
+	@Override
+	public SqmSelectableNode getSelectableNode() {
+		return this;
+	}
+
+	@Override
 	public String asLoggableText() {
 		return "<new " + instantiationTarget.getJavaType().getName() + ">";
 	}
 
-	public void addArgument(SqmDynamicInstantiationArgument argument) {
+	public void addArgument(SqmSelectionBase argument) {
 		if ( instantiationTarget.getNature() == LIST ) {
 			// really should not have an alias...
 			if ( argument.getAlias() != null ) {
@@ -103,15 +138,26 @@ public class SqmDynamicInstantiation
 	}
 
 	@Override
-	public SqmDynamicInstantiationArgument add(SqmExpression expression, String alias) {
-		SqmDynamicInstantiationArgument argument = new SqmDynamicInstantiationArgument( expression, alias );
-		addArgument( argument );
-		return argument;
+	public SqmSelectionBase add(SqmExpression expression, String alias) {
+		SqmSelectionBase sqmSelectionBase = (SqmSelectionBase) expression;
+		sqmSelectionBase.alias( alias );
+		addArgument( sqmSelectionBase );
+		return sqmSelectionBase;
 	}
 
 	@Override
-	public void add(SqmDynamicInstantiationArgument aliasExpression) {
+	public void add(SqmSelectionBase aliasExpression) {
 		addArgument( aliasExpression );
+	}
+
+	@Override
+	public boolean isCompoundSelection() {
+		return true;
+	}
+
+	@Override
+	public List<Selection<?>> getCompoundSelectionItems() {
+		return (List<Selection<?>>) (List) Collections.unmodifiableList( arguments );
 	}
 
 	@Override
@@ -128,7 +174,7 @@ public class SqmDynamicInstantiation
 				targetTypeDescriptor
 		);
 
-		for ( SqmDynamicInstantiationArgument sqmArgument : getArguments() ) {
+		for ( SqmSelectionBase sqmArgument : getArguments() ) {
 			dynamicInstantiation.addArgument(
 					sqmArgument.getAlias(),
 					(QueryResultProducer) sqmArgument.getSelectableNode().accept( walker )

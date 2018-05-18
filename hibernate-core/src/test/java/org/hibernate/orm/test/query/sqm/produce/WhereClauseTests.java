@@ -80,7 +80,7 @@ public class WhereClauseTests extends BaseSqmUnitTest {
 		assertThat( predicate, instanceOf( RelationalSqmPredicate.class ) );
 		RelationalSqmPredicate relationalPredicate = ( (RelationalSqmPredicate) predicate );
 
-		assertThat( relationalPredicate.getOperator(), is( RelationalPredicateOperator.EQUAL ) );
+		assertThat( relationalPredicate.getRelationalOperator(), is( RelationalPredicateOperator.EQUAL ) );
 
 		assertThat( relationalPredicate.getRightHandExpression(), instanceOf( SqmLiteralInteger.class ) );
 		assertThat( ( (SqmLiteralInteger) relationalPredicate.getRightHandExpression() ).getLiteralValue(), is( 311 ) );
@@ -108,7 +108,7 @@ public class WhereClauseTests extends BaseSqmUnitTest {
 		assertThat( predicate, instanceOf( RelationalSqmPredicate.class ) );
 		RelationalSqmPredicate relationalPredicate = ( (RelationalSqmPredicate) predicate );
 
-		assertThat( relationalPredicate.getOperator(), is( RelationalPredicateOperator.GREATER_THAN ) );
+		assertThat( relationalPredicate.getRelationalOperator(), is( RelationalPredicateOperator.GREATER_THAN ) );
 
 		assertThat( relationalPredicate.getRightHandExpression(), instanceOf( SqmLiteralInteger.class ) );
 		assertThat( ( (SqmLiteralInteger) relationalPredicate.getRightHandExpression() ).getLiteralValue(), is( 2 ) );

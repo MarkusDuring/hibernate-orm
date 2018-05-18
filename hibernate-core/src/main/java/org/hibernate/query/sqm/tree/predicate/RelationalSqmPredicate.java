@@ -6,22 +6,26 @@
  */
 package org.hibernate.query.sqm.tree.predicate;
 
+import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.query.sqm.consume.spi.SemanticQueryWalker;
+import org.hibernate.query.sqm.tree.SqmCopyContext;
 import org.hibernate.query.sqm.tree.expression.SqmExpression;
 
 /**
  * @author Steve Ebersole
  */
-public class RelationalSqmPredicate implements SqmPredicate, NegatableSqmPredicate {
+public class RelationalSqmPredicate extends AbstractSqmPredicate implements SqmPredicate, NegatableSqmPredicate {
 
 	private final SqmExpression leftHandExpression;
 	private final SqmExpression rightHandExpression;
 	private RelationalPredicateOperator operator;
 
 	public RelationalSqmPredicate(
+			SessionFactoryImplementor sessionFactory,
 			RelationalPredicateOperator operator,
 			SqmExpression leftHandExpression,
 			SqmExpression rightHandExpression) {
+		super( sessionFactory );
 		this.leftHandExpression = leftHandExpression;
 		this.rightHandExpression = rightHandExpression;
 		this.operator = operator;
@@ -35,7 +39,7 @@ public class RelationalSqmPredicate implements SqmPredicate, NegatableSqmPredica
 		return rightHandExpression;
 	}
 
-	public RelationalPredicateOperator getOperator() {
+	public RelationalPredicateOperator getRelationalOperator() {
 		return operator;
 	}
 
@@ -47,6 +51,16 @@ public class RelationalSqmPredicate implements SqmPredicate, NegatableSqmPredica
 	@Override
 	public void negate() {
 		this.operator = this.operator.negate();
+	}
+
+	@Override
+	public RelationalSqmPredicate copy(SqmCopyContext context) {
+		return new RelationalSqmPredicate(
+				sessionFactory,
+				operator,
+				leftHandExpression.copy( context ),
+				rightHandExpression.copy( context )
+		);
 	}
 
 	@Override

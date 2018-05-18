@@ -8,10 +8,13 @@ package org.hibernate.type.descriptor.java.internal;
 
 import java.util.Map;
 
+import org.hibernate.engine.spi.SessionFactoryImplementor;
+import org.hibernate.query.sqm.tree.expression.SqmLiteral;
 import org.hibernate.type.descriptor.java.spi.AbstractBasicJavaDescriptor;
 import org.hibernate.type.descriptor.spi.JdbcRecommendedSqlTypeMappingContext;
 import org.hibernate.type.descriptor.spi.WrapperOptions;
 import org.hibernate.type.descriptor.sql.spi.SqlTypeDescriptor;
+import org.hibernate.type.spi.BasicType;
 
 /**
  * @author Steve Ebersole
@@ -29,6 +32,11 @@ public class MapEntryJavaDescriptor extends AbstractBasicJavaDescriptor<Map.Entr
 	@Override
 	public SqlTypeDescriptor getJdbcRecommendedSqlType(JdbcRecommendedSqlTypeMappingContext context) {
 		throw new UnsupportedOperationException( "Unsupported attempt to resolve JDBC type for Map.Entry" );
+	}
+
+	@Override
+	public SqmLiteral<Map.Entry> createLiteralExpression(SessionFactoryImplementor sessionFactory, BasicType<Map.Entry> basicType, Map.Entry value) {
+		throw new UnsupportedOperationException( "Unsupported attempt to create literal expression for Map.Entry value" );
 	}
 
 	@Override

@@ -20,7 +20,7 @@ import org.hibernate.query.sqm.tree.from.SqmFromClause;
 import org.hibernate.query.sqm.tree.from.SqmFromElementSpace;
 import org.hibernate.query.sqm.tree.from.SqmRoot;
 import org.hibernate.query.sqm.tree.order.SqmSortSpecification;
-import org.hibernate.query.sqm.tree.select.SqmSelection;
+import org.hibernate.query.sqm.tree.select.SqmSelectionBase;
 
 import org.junit.jupiter.api.Test;
 
@@ -155,7 +155,7 @@ public class FromClauseTests extends BaseSqmUnitTest {
 
 		assertThat( firstSpace.getJoins(), hasSize( 1 ) );
 		assertThat( firstSpace.getJoins().get( 0 ).getIdentificationVariable(), is( joinAlias )  );
-		assertThat( firstSpace.getJoins().get( 0 ).getJoinType(), is( joinType ) );
+		assertThat( firstSpace.getJoins().get( 0 ).getSqmJoinType(), is( joinType ) );
 	}
 
 	@Test
@@ -245,7 +245,7 @@ public class FromClauseTests extends BaseSqmUnitTest {
 		assertThat( firstSpace, notNullValue() );
 
 		assertThat( selectStatement.getQuerySpec().getSelectClause().getSelections(), hasSize( 1 ) );
-		final SqmSelection sqmSelection = selectStatement.getQuerySpec().getSelectClause().getSelections().get( 0 );
+		final SqmSelectionBase sqmSelection = selectStatement.getQuerySpec().getSelectClause().getSelections().get( 0 );
 
 		assertThat( sqmSelection.getSelectableNode(), instanceOf( SqmEntityReference.class ) );
 	}

@@ -8,9 +8,17 @@ package org.hibernate.query.sqm.tree;
 
 import org.hibernate.query.sqm.tree.set.SqmSetClause;
 
+import javax.persistence.criteria.CriteriaUpdate;
+
 /**
  * @author Steve Ebersole
  */
-public interface SqmUpdateStatement extends SqmDeleteOrUpdateStatement{
+public interface SqmUpdateStatement extends SqmDeleteOrUpdateStatement, CriteriaUpdate {
 	SqmSetClause getSetClause();
+
+	@Override
+	SqmUpdateStatement copy();
+
+	@Override
+	SqmUpdateStatement copy(SqmCopyContext context);
 }

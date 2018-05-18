@@ -34,7 +34,12 @@ import org.hibernate.query.sqm.tree.expression.SqmLiteralString;
 import org.hibernate.query.sqm.tree.expression.SqmLiteralTime;
 import org.hibernate.query.sqm.tree.expression.SqmLiteralTimestamp;
 import org.hibernate.query.sqm.tree.expression.SqmLiteralTrue;
+import org.hibernate.query.sqm.tree.expression.SqmLiteralTimestamp;
+import org.hibernate.query.sqm.tree.expression.SqmLiteralTime;
+import org.hibernate.query.sqm.tree.expression.SqmLiteralDate;
+import org.hibernate.query.sqm.tree.expression.SqmLiteralGeneric;
 import org.hibernate.query.sqm.tree.expression.SqmNamedParameter;
+import org.hibernate.query.sqm.tree.expression.SqmAnonymousParameter;
 import org.hibernate.query.sqm.tree.expression.SqmParameterizedEntityType;
 import org.hibernate.query.sqm.tree.expression.SqmPositionalParameter;
 import org.hibernate.query.sqm.tree.expression.SqmSubQuery;
@@ -85,6 +90,8 @@ import org.hibernate.query.sqm.tree.from.SqmFromClause;
 import org.hibernate.query.sqm.tree.from.SqmFromElementSpace;
 import org.hibernate.query.sqm.tree.from.SqmNavigableJoin;
 import org.hibernate.query.sqm.tree.from.SqmRoot;
+import org.hibernate.query.sqm.tree.group.SqmGroupByClause;
+import org.hibernate.query.sqm.tree.group.SqmGroupSpecification;
 import org.hibernate.query.sqm.tree.order.SqmOrderByClause;
 import org.hibernate.query.sqm.tree.order.SqmSortSpecification;
 import org.hibernate.query.sqm.tree.paging.SqmLimitOffsetClause;
@@ -94,7 +101,6 @@ import org.hibernate.query.sqm.tree.predicate.BooleanExpressionSqmPredicate;
 import org.hibernate.query.sqm.tree.predicate.EmptinessSqmPredicate;
 import org.hibernate.query.sqm.tree.predicate.GroupedSqmPredicate;
 import org.hibernate.query.sqm.tree.predicate.InListSqmPredicate;
-import org.hibernate.query.sqm.tree.predicate.InSubQuerySqmPredicate;
 import org.hibernate.query.sqm.tree.predicate.LikeSqmPredicate;
 import org.hibernate.query.sqm.tree.predicate.MemberOfSqmPredicate;
 import org.hibernate.query.sqm.tree.predicate.NegatedSqmPredicate;
@@ -102,8 +108,9 @@ import org.hibernate.query.sqm.tree.predicate.NullnessSqmPredicate;
 import org.hibernate.query.sqm.tree.predicate.OrSqmPredicate;
 import org.hibernate.query.sqm.tree.predicate.RelationalSqmPredicate;
 import org.hibernate.query.sqm.tree.predicate.SqmWhereClause;
+import org.hibernate.query.sqm.tree.predicate.SqmHavingClause;
 import org.hibernate.query.sqm.tree.select.SqmSelectClause;
-import org.hibernate.query.sqm.tree.select.SqmSelection;
+import org.hibernate.query.sqm.tree.select.SqmSelectionBase;
 import org.hibernate.query.sqm.tree.set.SqmAssignment;
 import org.hibernate.query.sqm.tree.set.SqmSetClause;
 import org.hibernate.sql.ast.produce.ordering.internal.SqmColumnReference;
@@ -153,7 +160,7 @@ public interface SemanticQueryWalker<T> {
 
 	T visitSelectClause(SqmSelectClause selectClause);
 
-	T visitSelection(SqmSelection selection);
+	T visitSelection(SqmSelectionBase selection);
 
 
 	// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -184,6 +191,8 @@ public interface SemanticQueryWalker<T> {
 	T visitPositionalParameterExpression(SqmPositionalParameter expression);
 
 	T visitNamedParameterExpression(SqmNamedParameter expression);
+
+	T visitAnonymousParameterExpression(SqmAnonymousParameter expression);
 
 	T visitEntityTypeLiteralExpression(SqmLiteralEntityType expression);
 
@@ -257,6 +266,8 @@ public interface SemanticQueryWalker<T> {
 
 	T visitWhereClause(SqmWhereClause whereClause);
 
+	T visitHavingClause(SqmHavingClause havingClause);
+
 	T visitGroupedPredicate(GroupedSqmPredicate predicate);
 
 	T visitAndPredicate(AndSqmPredicate predicate);
@@ -279,9 +290,15 @@ public interface SemanticQueryWalker<T> {
 
 	T visitInListPredicate(InListSqmPredicate predicate);
 
-	T visitInSubQueryPredicate(InSubQuerySqmPredicate predicate);
-
 	T visitBooleanExpressionPredicate(BooleanExpressionSqmPredicate predicate);
+
+
+	// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+	// grouping
+
+	T visitGroupByClause(SqmGroupByClause groupByClause);
+
+	T visitGroupSpecification(SqmGroupSpecification groupSpecification);
 
 
 	// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -336,6 +353,14 @@ public interface SemanticQueryWalker<T> {
 	T visitLiteralTrueExpression(SqmLiteralTrue expression);
 
 	T visitLiteralFalseExpression(SqmLiteralFalse expression);
+
+	T visitLiteralTimestampExpression(SqmLiteralTimestamp expression);
+
+	T visitLiteralDateExpression(SqmLiteralDate expression);
+
+	T visitLiteralTimeExpression(SqmLiteralTime expression);
+
+	T visitLiteralGenericExpression(SqmLiteralGeneric<?> expression);
 
 	T visitLiteralNullExpression(SqmLiteralNull expression);
 

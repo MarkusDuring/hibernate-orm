@@ -10,11 +10,15 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.sql.Types;
 
+import org.hibernate.engine.spi.SessionFactoryImplementor;
+import org.hibernate.query.sqm.tree.expression.SqmLiteral;
+import org.hibernate.query.sqm.tree.expression.SqmLiteralDouble;
 import org.hibernate.type.descriptor.java.spi.AbstractNumericJavaDescriptor;
 import org.hibernate.type.descriptor.java.spi.Primitive;
 import org.hibernate.type.descriptor.spi.JdbcRecommendedSqlTypeMappingContext;
 import org.hibernate.type.descriptor.spi.WrapperOptions;
 import org.hibernate.type.descriptor.sql.spi.SqlTypeDescriptor;
+import org.hibernate.type.spi.BasicType;
 
 /**
  * Descriptor for {@link Double} handling.
@@ -33,6 +37,11 @@ public class DoubleJavaDescriptor extends AbstractNumericJavaDescriptor<Double> 
 	@Override
 	public SqlTypeDescriptor getJdbcRecommendedSqlType(JdbcRecommendedSqlTypeMappingContext context) {
 		return context.getTypeConfiguration().getSqlTypeDescriptorRegistry().getDescriptor( Types.DOUBLE );
+	}
+
+	@Override
+	public SqmLiteral<Double> createLiteralExpression(SessionFactoryImplementor sessionFactory, BasicType<Double> basicType, Double value) {
+		return new SqmLiteralDouble( sessionFactory, value, basicType );
 	}
 
 	@Override

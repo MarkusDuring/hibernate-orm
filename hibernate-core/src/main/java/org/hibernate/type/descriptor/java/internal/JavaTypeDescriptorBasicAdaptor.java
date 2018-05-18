@@ -8,11 +8,14 @@ package org.hibernate.type.descriptor.java.internal;
 
 import java.util.Comparator;
 
+import org.hibernate.engine.spi.SessionFactoryImplementor;
+import org.hibernate.query.sqm.tree.expression.SqmLiteral;
 import org.hibernate.type.descriptor.spi.JdbcRecommendedSqlTypeMappingContext;
 import org.hibernate.type.descriptor.spi.WrapperOptions;
 import org.hibernate.type.descriptor.java.spi.AbstractBasicJavaDescriptor;
 import org.hibernate.type.descriptor.java.MutabilityPlan;
 import org.hibernate.type.descriptor.sql.spi.SqlTypeDescriptor;
+import org.hibernate.type.spi.BasicType;
 
 /**
  * AbstractBasicTypeDescriptor adapter for cases where we do not know a proper JavaTypeDescriptor
@@ -43,6 +46,11 @@ public class JavaTypeDescriptorBasicAdaptor<T> extends AbstractBasicJavaDescript
 		throw new UnsupportedOperationException(
 				"Recommended SqlTypeDescriptor not known for this Java type : " + getJavaType().getName()
 		);
+	}
+
+	@Override
+	public SqmLiteral<T> createLiteralExpression(SessionFactoryImplementor sessionFactory, BasicType<T> basicType, T value) {
+		return null;
 	}
 
 	@Override

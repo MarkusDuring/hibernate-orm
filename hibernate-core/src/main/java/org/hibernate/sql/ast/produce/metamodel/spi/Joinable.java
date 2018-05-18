@@ -8,6 +8,11 @@ package org.hibernate.sql.ast.produce.metamodel.spi;
 
 import org.hibernate.NotYetImplementedFor6Exception;
 import org.hibernate.metamodel.model.domain.spi.Navigable;
+import org.hibernate.query.sqm.produce.spi.SqmCreationContext;
+import org.hibernate.query.sqm.tree.SqmJoinType;
+import org.hibernate.query.sqm.tree.expression.domain.SqmNavigableReference;
+import org.hibernate.query.sqm.tree.from.SqmFrom;
+import org.hibernate.query.sqm.tree.from.SqmJoin;
 import org.hibernate.type.ForeignKeyDirection;
 
 /**
@@ -17,6 +22,8 @@ import org.hibernate.type.ForeignKeyDirection;
  */
 public interface Joinable<T> extends Navigable<T> {
 	// todo (6.0) : #createSqmJoin ?
+
+	SqmJoin createJoin(SqmFrom lhs, SqmNavigableReference navigableReference, String uniqueIdentifier, String alias, SqmJoinType joinType, boolean fetched, SqmCreationContext sqmCreationContext);
 
 	default ForeignKeyDirection getForeignKeyDirection() {
 		throw new NotYetImplementedFor6Exception();

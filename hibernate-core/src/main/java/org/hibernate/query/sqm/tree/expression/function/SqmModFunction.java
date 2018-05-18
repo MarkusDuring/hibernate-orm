@@ -6,11 +6,13 @@
  */
 package org.hibernate.query.sqm.tree.expression.function;
 
-import java.util.Locale;
-
+import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.metamodel.model.domain.spi.AllowableFunctionReturnType;
 import org.hibernate.query.sqm.consume.spi.SemanticQueryWalker;
+import org.hibernate.query.sqm.tree.SqmCopyContext;
 import org.hibernate.query.sqm.tree.expression.SqmExpression;
+
+import java.util.Locale;
 
 /**
  * @author Steve Ebersole
@@ -22,10 +24,11 @@ public class SqmModFunction extends AbstractSqmFunction {
 	private final SqmExpression divisor;
 
 	public SqmModFunction(
+			SessionFactoryImplementor sessionFactory,
 			SqmExpression dividend,
 			SqmExpression divisor,
 			AllowableFunctionReturnType resultType) {
-		super( resultType );
+		super( sessionFactory, resultType );
 		this.dividend = dividend;
 		this.divisor = divisor;
 	}
@@ -46,6 +49,16 @@ public class SqmModFunction extends AbstractSqmFunction {
 	@Override
 	public boolean hasArguments() {
 		return true;
+	}
+
+	@Override
+	public SqmModFunction copy(SqmCopyContext context) {
+		return new SqmModFunction(
+                getSessionFactory(),
+				dividend.copy( context ),
+				divisor.copy( context ),
+				getExpressableType()
+		);
 	}
 
 	@Override

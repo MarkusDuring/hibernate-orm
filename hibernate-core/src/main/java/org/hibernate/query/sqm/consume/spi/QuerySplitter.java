@@ -25,27 +25,7 @@ import org.hibernate.query.sqm.tree.SqmDeleteStatement;
 import org.hibernate.query.sqm.tree.SqmQuerySpec;
 import org.hibernate.query.sqm.tree.SqmSelectStatement;
 import org.hibernate.query.sqm.tree.SqmUpdateStatement;
-import org.hibernate.query.sqm.tree.expression.SqmBinaryArithmetic;
-import org.hibernate.query.sqm.tree.expression.SqmConcat;
-import org.hibernate.query.sqm.tree.expression.SqmConstantEnum;
-import org.hibernate.query.sqm.tree.expression.SqmConstantFieldReference;
-import org.hibernate.query.sqm.tree.expression.SqmExpression;
-import org.hibernate.query.sqm.tree.expression.SqmLiteralBigDecimal;
-import org.hibernate.query.sqm.tree.expression.SqmLiteralBigInteger;
-import org.hibernate.query.sqm.tree.expression.SqmLiteralCharacter;
-import org.hibernate.query.sqm.tree.expression.SqmLiteralDouble;
-import org.hibernate.query.sqm.tree.expression.SqmLiteralEntityType;
-import org.hibernate.query.sqm.tree.expression.SqmLiteralFalse;
-import org.hibernate.query.sqm.tree.expression.SqmLiteralFloat;
-import org.hibernate.query.sqm.tree.expression.SqmLiteralInteger;
-import org.hibernate.query.sqm.tree.expression.SqmLiteralLong;
-import org.hibernate.query.sqm.tree.expression.SqmLiteralNull;
-import org.hibernate.query.sqm.tree.expression.SqmLiteralString;
-import org.hibernate.query.sqm.tree.expression.SqmLiteralTrue;
-import org.hibernate.query.sqm.tree.expression.SqmNamedParameter;
-import org.hibernate.query.sqm.tree.expression.SqmPositionalParameter;
-import org.hibernate.query.sqm.tree.expression.SqmSubQuery;
-import org.hibernate.query.sqm.tree.expression.SqmUnaryOperation;
+import org.hibernate.query.sqm.tree.expression.*;
 import org.hibernate.query.sqm.tree.expression.domain.SqmAttributeReference;
 import org.hibernate.query.sqm.tree.expression.domain.SqmNavigableContainerReference;
 import org.hibernate.query.sqm.tree.expression.domain.SqmNavigableReference;
@@ -68,31 +48,23 @@ import org.hibernate.query.sqm.tree.from.SqmFromClause;
 import org.hibernate.query.sqm.tree.from.SqmFromElementSpace;
 import org.hibernate.query.sqm.tree.from.SqmNavigableJoin;
 import org.hibernate.query.sqm.tree.from.SqmRoot;
+import org.hibernate.query.sqm.tree.group.SqmGroupByClause;
+import org.hibernate.query.sqm.tree.group.SqmGroupSpecification;
 import org.hibernate.query.sqm.tree.internal.SqmSelectStatementImpl;
 import org.hibernate.query.sqm.tree.order.SqmOrderByClause;
 import org.hibernate.query.sqm.tree.order.SqmSortSpecification;
 import org.hibernate.query.sqm.tree.paging.SqmLimitOffsetClause;
-import org.hibernate.query.sqm.tree.predicate.AndSqmPredicate;
-import org.hibernate.query.sqm.tree.predicate.BetweenSqmPredicate;
-import org.hibernate.query.sqm.tree.predicate.EmptinessSqmPredicate;
-import org.hibernate.query.sqm.tree.predicate.GroupedSqmPredicate;
-import org.hibernate.query.sqm.tree.predicate.InListSqmPredicate;
-import org.hibernate.query.sqm.tree.predicate.InSubQuerySqmPredicate;
-import org.hibernate.query.sqm.tree.predicate.LikeSqmPredicate;
-import org.hibernate.query.sqm.tree.predicate.MemberOfSqmPredicate;
-import org.hibernate.query.sqm.tree.predicate.NegatedSqmPredicate;
-import org.hibernate.query.sqm.tree.predicate.NullnessSqmPredicate;
-import org.hibernate.query.sqm.tree.predicate.OrSqmPredicate;
-import org.hibernate.query.sqm.tree.predicate.RelationalSqmPredicate;
-import org.hibernate.query.sqm.tree.predicate.SqmPredicate;
-import org.hibernate.query.sqm.tree.predicate.SqmWhereClause;
+import org.hibernate.query.sqm.tree.predicate.*;
 import org.hibernate.query.sqm.tree.select.SqmSelectClause;
-import org.hibernate.query.sqm.tree.select.SqmSelection;
+import org.hibernate.query.sqm.tree.select.SqmSelectionBase;
 import org.hibernate.query.sqm.tree.set.SqmAssignment;
 import org.hibernate.query.sqm.tree.set.SqmSetClause;
 import org.hibernate.sql.ast.produce.metamodel.spi.BasicValuedExpressableType;
+import org.hibernate.sql.ast.produce.metamodel.spi.Joinable;
 import org.hibernate.sql.ast.produce.metamodel.spi.PolymorphicEntityValuedExpressableType;
 import org.hibernate.sql.ast.produce.spi.SqlAstFunctionProducer;
+
+import javax.persistence.criteria.CommonAbstractCriteria;
 
 /**
  * Handles splitting queries containing unmapped polymorphic references.
@@ -140,6 +112,7 @@ public class QuerySplitter {
 		private final SqmRoot unmappedPolymorphicFromElement;
 		private final EntityDescriptor mappedDescriptor;
 
+		private CommonAbstractCriteria containingQuery;
 		private Map<SqmFrom,SqmFrom> sqmFromSqmCopyMap = new HashMap<>();
 		private Map<SqmNavigableReference, SqmNavigableReference> navigableBindingCopyMap = new HashMap<>();
 
@@ -175,7 +148,11 @@ public class QuerySplitter {
 
 		@Override
 		public SqmSelectStatement visitSelectStatement(SqmSelectStatement statement) {
-			final SqmSelectStatementImpl copy = new SqmSelectStatementImpl();
+			final SqmSelectStatementImpl copy = new SqmSelectStatementImpl(
+					this,
+					Object.class
+			);
+			containingQuery = copy;
 			copy.applyQuerySpec( visitQuerySpec( statement.getQuerySpec() ) );
 			return copy;
 		}
@@ -189,6 +166,8 @@ public class QuerySplitter {
 					visitFromClause( querySpec.getFromClause() ),
 					visitSelectClause( querySpec.getSelectClause() ),
 					visitWhereClause( querySpec.getWhereClause() ),
+					visitGroupByClause( querySpec.getGroupByClause() ),
+					visitHavingClause( querySpec.getHavingClause() ),
 					visitOrderByClause( querySpec.getOrderByClause() ),
 					visitLimitOffsetClause( querySpec.getLimitOffsetClause() )
 			);
@@ -308,7 +287,7 @@ public class QuerySplitter {
 					joinedFromElement.getUniqueIdentifier(),
 					joinedFromElement.getIdentificationVariable(),
 					joinedFromElement.getNavigableReference().getReferencedNavigable().getEntityDescriptor(),
-					joinedFromElement.getJoinType(),
+					joinedFromElement.getSqmJoinType(),
 					this
 			);
 			navigableBindingCopyMap.put( joinedFromElement.getNavigableReference(), copy.getNavigableReference() );
@@ -354,13 +333,15 @@ public class QuerySplitter {
 					.getReferencedNavigable()
 					.createSqmExpression( sourceBindingCopy.getExportedFromElement(), sourceBindingCopy, this );
 
-			final SqmNavigableJoin copy = new SqmNavigableJoin(
+			Joinable<?> joinable = (Joinable<?>) attributeBindingCopy.getReferencedNavigable();
+			final SqmNavigableJoin copy = (SqmNavigableJoin) joinable.createJoin(
 					sourceBindingCopy.getExportedFromElement(),
 					attributeBindingCopy,
 					fromElement.getUniqueIdentifier(),
 					fromElement.getIdentificationVariable(),
-					fromElement.getJoinType(),
-					fromElement.isFetched()
+					fromElement.getSqmJoinType(),
+					fromElement.isFetched(),
+					this
 			);
 			navigableBindingCopyMap.put( fromElement.getAttributeReference(), copy.getAttributeReference() );
 			return copy;
@@ -368,13 +349,11 @@ public class QuerySplitter {
 
 		@Override
 		public SqmSelectClause visitSelectClause(SqmSelectClause selectClause) {
-			SqmSelectClause copy = new SqmSelectClause( selectClause.isDistinct() );
-			for ( SqmSelection selection : selectClause.getSelections() ) {
-				copy.addSelection(
-						new SqmSelection(
-								(SqmExpression) selection.getSelectableNode().accept( this ),
-								selection.getAlias()
-						)
+			SqmSelectClause copy = new SqmSelectClause( selectClause.isDistinct(), selectClause.getJavaType() );
+			for ( SqmSelectionBase selection : selectClause.getSelections() ) {
+				copy.add(
+						(SqmExpression) selection.getSelectableNode().accept( this ),
+						selection.getAlias()
 				);
 			}
 			return copy;
@@ -389,13 +368,22 @@ public class QuerySplitter {
 		}
 
 		@Override
+		public SqmHavingClause visitHavingClause(SqmHavingClause havingClause) {
+			if ( havingClause == null ) {
+				return null;
+			}
+			return new SqmHavingClause( (SqmPredicate) havingClause.getPredicate().accept( this ) );
+		}
+
+		@Override
 		public GroupedSqmPredicate visitGroupedPredicate(GroupedSqmPredicate predicate) {
-			return new GroupedSqmPredicate( (SqmPredicate) predicate.accept( this ) );
+			return new GroupedSqmPredicate( getSessionFactory(), (SqmPredicate) predicate.accept( this ) );
 		}
 
 		@Override
 		public AndSqmPredicate visitAndPredicate(AndSqmPredicate predicate) {
 			return new AndSqmPredicate(
+					getSessionFactory(),
 					(SqmPredicate) predicate.getLeftHandPredicate().accept( this ),
 					(SqmPredicate) predicate.getRightHandPredicate().accept( this )
 			);
@@ -404,6 +392,7 @@ public class QuerySplitter {
 		@Override
 		public OrSqmPredicate visitOrPredicate(OrSqmPredicate predicate) {
 			return new OrSqmPredicate(
+					getSessionFactory(),
 					(SqmPredicate) predicate.getLeftHandPredicate().accept( this ),
 					(SqmPredicate) predicate.getRightHandPredicate().accept( this )
 			);
@@ -412,7 +401,8 @@ public class QuerySplitter {
 		@Override
 		public RelationalSqmPredicate visitRelationalPredicate(RelationalSqmPredicate predicate) {
 			return new RelationalSqmPredicate(
-					predicate.getOperator(),
+					getSessionFactory(),
+					predicate.getRelationalOperator(),
 					(SqmExpression) predicate.getLeftHandExpression().accept( this ),
 					(SqmExpression) predicate.getRightHandExpression().accept( this )
 			);
@@ -421,6 +411,7 @@ public class QuerySplitter {
 		@Override
 		public EmptinessSqmPredicate visitIsEmptyPredicate(EmptinessSqmPredicate predicate) {
 			return new EmptinessSqmPredicate(
+					getSessionFactory(),
 					(SqmPluralAttributeReference) predicate.getExpression().accept( this ),
 					predicate.isNegated()
 			);
@@ -429,6 +420,7 @@ public class QuerySplitter {
 		@Override
 		public NullnessSqmPredicate visitIsNullPredicate(NullnessSqmPredicate predicate) {
 			return new NullnessSqmPredicate(
+					getSessionFactory(),
 					(SqmExpression) predicate.getExpression().accept( this ),
 					predicate.isNegated()
 			);
@@ -437,6 +429,7 @@ public class QuerySplitter {
 		@Override
 		public BetweenSqmPredicate visitBetweenPredicate(BetweenSqmPredicate predicate) {
 			return new BetweenSqmPredicate(
+					getSessionFactory(),
 					(SqmExpression) predicate.getExpression().accept( this ),
 					(SqmExpression) predicate.getLowerBound().accept( this ),
 					(SqmExpression) predicate.getUpperBound().accept( this ),
@@ -447,6 +440,7 @@ public class QuerySplitter {
 		@Override
 		public LikeSqmPredicate visitLikePredicate(LikeSqmPredicate predicate) {
 			return new LikeSqmPredicate(
+					getSessionFactory(),
 					(SqmExpression) predicate.getMatchExpression().accept( this ),
 					(SqmExpression) predicate.getPattern().accept( this ),
 					(SqmExpression) predicate.getEscapeCharacter().accept( this )
@@ -455,10 +449,13 @@ public class QuerySplitter {
 
 		@Override
 		public MemberOfSqmPredicate visitMemberOfPredicate(MemberOfSqmPredicate predicate) {
-			final SqmAttributeReference attributeReferenceCopy = resolveAttributeReference( predicate.getPluralAttributeReference() );
 			// NOTE : no type check b4 cast as it is assumed that the initial SQM producer
 			//		already verified that the path resolves to a plural attribute
-			return new MemberOfSqmPredicate( (SqmPluralAttributeReference) attributeReferenceCopy );
+			return new MemberOfSqmPredicate(
+					getSessionFactory(),
+					(SqmExpression) predicate.getExpression().accept( this ),
+					(SqmPluralAttributeReference) resolveAttributeReference( predicate.getPluralAttributeReference() )
+			);
 		}
 
 //		private DomainReferenceBinding resolveDomainReferenceBinding(DomainReferenceBinding binding) {
@@ -524,6 +521,7 @@ public class QuerySplitter {
 		@Override
 		public NegatedSqmPredicate visitNegatedPredicate(NegatedSqmPredicate predicate) {
 			return new NegatedSqmPredicate(
+					getSessionFactory(),
 					(SqmPredicate) predicate.getWrappedPredicate().accept( this )
 			);
 		}
@@ -531,6 +529,7 @@ public class QuerySplitter {
 		@Override
 		public InListSqmPredicate visitInListPredicate(InListSqmPredicate predicate) {
 			InListSqmPredicate copy = new InListSqmPredicate(
+					getSessionFactory(),
 					(SqmExpression) predicate.getTestExpression().accept( this )
 			);
 			for ( SqmExpression expression : predicate.getListExpressions() ) {
@@ -540,10 +539,23 @@ public class QuerySplitter {
 		}
 
 		@Override
-		public InSubQuerySqmPredicate visitInSubQueryPredicate(InSubQuerySqmPredicate predicate) {
-			return new InSubQuerySqmPredicate(
-					(SqmExpression) predicate.getTestExpression().accept( this ),
-					visitSubQueryExpression( predicate.getSubQueryExpression() )
+		public SqmGroupByClause visitGroupByClause(SqmGroupByClause groupByClause) {
+			if ( groupByClause == null ) {
+				return null;
+			}
+
+			SqmGroupByClause copy = new SqmGroupByClause();
+			for ( SqmGroupSpecification groupSpecification : groupByClause.getGroupBySpecifications() ) {
+				copy.addGroupBySpecification( visitGroupSpecification( groupSpecification ) );
+			}
+			return copy;
+		}
+
+		@Override
+		public SqmGroupSpecification visitGroupSpecification(SqmGroupSpecification groupSpecification) {
+			return new SqmGroupSpecification(
+					(SqmExpression) groupSpecification.getGroupExpression().accept( this ),
+					groupSpecification.getCollation()
 			);
 		}
 
@@ -583,22 +595,28 @@ public class QuerySplitter {
 
 		@Override
 		public SqmPositionalParameter visitPositionalParameterExpression(SqmPositionalParameter expression) {
-			return new SqmPositionalParameter( expression.getPosition(), expression.allowMultiValuedBinding() );
+			return new SqmPositionalParameter( getSessionFactory(), expression.getPosition(), expression.allowMultiValuedBinding() );
 		}
 
 		@Override
 		public SqmNamedParameter visitNamedParameterExpression(SqmNamedParameter expression) {
-			return new SqmNamedParameter( expression.getName(), expression.allowMultiValuedBinding() );
+			return new SqmNamedParameter( getSessionFactory(), expression.getName(), expression.allowMultiValuedBinding() );
+		}
+
+		@Override
+		public Object visitAnonymousParameterExpression(SqmAnonymousParameter expression) {
+			return new SqmAnonymousParameter( getSessionFactory(), expression.allowMultiValuedBinding() );
 		}
 
 		@Override
 		public SqmLiteralEntityType visitEntityTypeLiteralExpression(SqmLiteralEntityType expression) {
-			return new SqmLiteralEntityType( expression.getExpressableType() );
+			return new SqmLiteralEntityType( getSessionFactory(), expression.getExpressableType() );
 		}
 
 		@Override
 		public SqmUnaryOperation visitUnaryOperationExpression(SqmUnaryOperation expression) {
 			return new SqmUnaryOperation(
+					getSessionFactory(),
 					expression.getOperation(),
 					(SqmExpression) expression.getOperand().accept( this )
 			);
@@ -611,6 +629,7 @@ public class QuerySplitter {
 				argumentsCopy.add( (SqmExpression) argument.accept( this ) );
 			}
 			return new SqmGenericFunction(
+					getSessionFactory(),
 					expression.getFunctionName(),
 					expression.getExpressableType(),
 					argumentsCopy
@@ -629,6 +648,7 @@ public class QuerySplitter {
 		public SqmAvgFunction visitAvgFunction(SqmAvgFunction expression) {
 			return handleDistinct(
 					new SqmAvgFunction(
+							getSessionFactory(),
 							(SqmExpression) expression.getArgument().accept( this ),
 							expression.getExpressableType()
 					),
@@ -648,7 +668,7 @@ public class QuerySplitter {
 		@Override
 		public SqmCountStarFunction visitCountStarFunction(SqmCountStarFunction expression) {
 			return handleDistinct(
-					new SqmCountStarFunction( expression.getExpressableType() ),
+					new SqmCountStarFunction( getSessionFactory(), expression.getExpressableType() ),
 					expression.isDistinct()
 			);
 
@@ -658,6 +678,7 @@ public class QuerySplitter {
 		public SqmCountFunction visitCountFunction(SqmCountFunction expression) {
 			return handleDistinct(
 					new SqmCountFunction(
+							getSessionFactory(),
 							(SqmExpression) expression.getArgument().accept( this ),
 							expression.getExpressableType()
 					),
@@ -669,6 +690,7 @@ public class QuerySplitter {
 		public SqmMaxFunction visitMaxFunction(SqmMaxFunction expression) {
 			return handleDistinct(
 					new SqmMaxFunction(
+							getSessionFactory(),
 							(SqmExpression) expression.getArgument().accept( this ),
 							expression.getExpressableType()
 					),
@@ -680,6 +702,7 @@ public class QuerySplitter {
 		public SqmMinFunction visitMinFunction(SqmMinFunction expression) {
 			return handleDistinct(
 					new SqmMinFunction(
+							getSessionFactory(),
 							(SqmExpression) expression.getArgument().accept( this ),
 							expression.getExpressableType()
 					),
@@ -691,6 +714,7 @@ public class QuerySplitter {
 		public SqmSumFunction visitSumFunction(SqmSumFunction expression) {
 			return handleDistinct(
 					new SqmSumFunction(
+							getSessionFactory(),
 							(SqmExpression) expression.getArgument().accept( this ),
 							expression.getExpressableType()
 					),
@@ -700,62 +724,83 @@ public class QuerySplitter {
 
 		@Override
 		public SqmLiteralString visitLiteralStringExpression(SqmLiteralString expression) {
-			return new SqmLiteralString( expression.getLiteralValue(), expression.getExpressableType() );
+			return new SqmLiteralString( getSessionFactory(), expression.getLiteralValue(), expression.getExpressableType() );
 		}
 
 		@Override
 		public SqmLiteralCharacter visitLiteralCharacterExpression(SqmLiteralCharacter expression) {
-			return new SqmLiteralCharacter( expression.getLiteralValue(), expression.getExpressableType() );
+			return new SqmLiteralCharacter( getSessionFactory(), expression.getLiteralValue(), expression.getExpressableType() );
 		}
 
 		@Override
 		public SqmLiteralDouble visitLiteralDoubleExpression(SqmLiteralDouble expression) {
-			return new SqmLiteralDouble( expression.getLiteralValue(), expression.getExpressableType() );
+			return new SqmLiteralDouble( getSessionFactory(), expression.getLiteralValue(), expression.getExpressableType() );
 		}
 
 		@Override
 		public SqmLiteralInteger visitLiteralIntegerExpression(SqmLiteralInteger expression) {
-			return new SqmLiteralInteger( expression.getLiteralValue(), expression.getExpressableType() );
+			return new SqmLiteralInteger( getSessionFactory(), expression.getLiteralValue(), expression.getExpressableType() );
 		}
 
 		@Override
 		public SqmLiteralBigInteger visitLiteralBigIntegerExpression(SqmLiteralBigInteger expression) {
-			return new SqmLiteralBigInteger( expression.getLiteralValue(), expression.getExpressableType() );
+			return new SqmLiteralBigInteger( getSessionFactory(), expression.getLiteralValue(), expression.getExpressableType() );
 		}
 
 		@Override
 		public SqmLiteralBigDecimal visitLiteralBigDecimalExpression(SqmLiteralBigDecimal expression) {
-			return new SqmLiteralBigDecimal( expression.getLiteralValue(), expression.getExpressableType() );
+			return new SqmLiteralBigDecimal( getSessionFactory(), expression.getLiteralValue(), expression.getExpressableType() );
 		}
 
 		@Override
 		public SqmLiteralFloat visitLiteralFloatExpression(SqmLiteralFloat expression) {
-			return new SqmLiteralFloat( expression.getLiteralValue(), expression.getExpressableType() );
+			return new SqmLiteralFloat( getSessionFactory(), expression.getLiteralValue(), expression.getExpressableType() );
 		}
 
 		@Override
 		public SqmLiteralLong visitLiteralLongExpression(SqmLiteralLong expression) {
-			return new SqmLiteralLong( expression.getLiteralValue(), expression.getExpressableType() );
+			return new SqmLiteralLong( getSessionFactory(), expression.getLiteralValue(), expression.getExpressableType() );
 		}
 
 		@Override
 		public SqmLiteralTrue visitLiteralTrueExpression(SqmLiteralTrue expression) {
-			return new SqmLiteralTrue( expression.getExpressableType() );
+			return new SqmLiteralTrue( getSessionFactory(), expression.getExpressableType() );
 		}
 
 		@Override
 		public SqmLiteralFalse visitLiteralFalseExpression(SqmLiteralFalse expression) {
-			return new SqmLiteralFalse( expression.getExpressableType() );
+			return new SqmLiteralFalse( getSessionFactory(), expression.getExpressableType() );
+		}
+
+		@Override
+		public SqmLiteralTimestamp visitLiteralTimestampExpression(SqmLiteralTimestamp expression) {
+			return new SqmLiteralTimestamp( getSessionFactory(), expression.getLiteralValue(), expression.getExpressableType() );
+		}
+
+		@Override
+		public SqmLiteralDate visitLiteralDateExpression(SqmLiteralDate expression) {
+			return new SqmLiteralDate( getSessionFactory(), expression.getLiteralValue(), expression.getExpressableType() );
+		}
+
+		@Override
+		public SqmLiteralTime visitLiteralTimeExpression(SqmLiteralTime expression) {
+			return new SqmLiteralTime( getSessionFactory(), expression.getLiteralValue(), expression.getExpressableType() );
+		}
+
+		@Override
+		public SqmLiteralGeneric visitLiteralGenericExpression(SqmLiteralGeneric expression) {
+			return new SqmLiteralGeneric( getSessionFactory(), expression.getLiteralValue(), expression.getExpressableType(), expression.getMutabilityPlan() );
 		}
 
 		@Override
 		public SqmLiteralNull visitLiteralNullExpression(SqmLiteralNull expression) {
-			return new SqmLiteralNull();
+			return new SqmLiteralNull( getSessionFactory() );
 		}
 
 		@Override
 		public SqmConcat visitConcatExpression(SqmConcat expression) {
 			return new SqmConcat(
+					getSessionFactory(),
 					(SqmExpression) expression.getLeftHandOperand().accept( this ),
 					(SqmExpression) expression.getRightHandOperand().accept( this )
 			);
@@ -769,6 +814,7 @@ public class QuerySplitter {
 			}
 
 			return new SqmConcatFunction(
+					getSessionFactory(),
 					(BasicValuedExpressableType) expression.getExpressableType(),
 					arguments
 			);
@@ -777,18 +823,19 @@ public class QuerySplitter {
 		@Override
 		@SuppressWarnings("unchecked")
 		public SqmConstantEnum visitConstantEnumExpression(SqmConstantEnum expression) {
-			return new SqmConstantEnum( expression.getLiteralValue(), expression.getExpressableType() );
+			return new SqmConstantEnum( getSessionFactory(), expression.getLiteralValue(), expression.getExpressableType() );
 		}
 
 		@Override
 		@SuppressWarnings("unchecked")
 		public SqmConstantFieldReference visitConstantFieldReference(SqmConstantFieldReference expression) {
-			return new SqmConstantFieldReference( expression.getSourceField(), expression.getLiteralValue(), expression.getExpressableType() );
+			return new SqmConstantFieldReference( getSessionFactory(), expression.getSourceField(), expression.getLiteralValue(), expression.getExpressableType() );
 		}
 
 		@Override
 		public SqmBinaryArithmetic visitBinaryArithmeticExpression(SqmBinaryArithmetic expression) {
 			return new SqmBinaryArithmetic(
+					getSessionFactory(),
 					expression.getOperation(),
 					(SqmExpression) expression.getLeftHandOperand().accept( this ),
 					(SqmExpression) expression.getRightHandOperand().accept( this ),
@@ -801,10 +848,19 @@ public class QuerySplitter {
 			// its not supported for a SubQuery to define a dynamic instantiation, so
 			//		any "selectable node" will only ever be an SqmExpression
 			return new SqmSubQuery(
-					visitQuerySpec( expression.getQuerySpec() ),
-					// assume already validated
-					( (SqmExpression) expression.getQuerySpec().getSelectClause().getSelections().get( 0 ).getSelectableNode() ).getExpressableType()
+					this,
+					() -> visitQuerySpec( expression.getQuerySpec() )
 			);
+		}
+
+		@Override
+		public CommonAbstractCriteria getCurrentContainingQuery() {
+			return containingQuery;
+		}
+
+		@Override
+		public void setCurrentContainingQuery(CommonAbstractCriteria currentContainingQuery) {
+			this.containingQuery = currentContainingQuery;
 		}
 
 		@Override
@@ -823,6 +879,11 @@ public class QuerySplitter {
 		public SqmFromBuilder getCurrentFromElementBuilder() {
 			// todo (6.0) : not sure these are needed
 			throw new NotYetImplementedFor6Exception(  );
+		}
+
+		@Override
+		public void setCurrentFromElementBuilder(SqmFromBuilder fromBuilder) {
+			throw new UnsupportedOperationException();
 		}
 
 		@Override

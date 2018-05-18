@@ -6,12 +6,13 @@
  */
 package org.hibernate.query.criteria;
 
+import java.util.Collection;
 import java.util.Map;
 import javax.persistence.criteria.CriteriaBuilder;
 import javax.persistence.criteria.Expression;
 import javax.persistence.criteria.Predicate;
 
-import org.hibernate.SessionFactory;
+import org.hibernate.engine.spi.SessionFactoryImplementor;
 
 /**
  * Hibernate extensions to the JPA CriteriaBuilder.
@@ -20,7 +21,13 @@ import org.hibernate.SessionFactory;
  */
 public interface HibernateCriteriaBuilder extends CriteriaBuilder {
 
-	SessionFactory getSessionFactory();
+	SessionFactoryImplementor getSessionFactory();
+
+	Predicate in(Expression testExpression, Object... values);
+
+	Predicate in(Expression testExpression, Expression[] values);
+
+	Predicate in(Expression testExpression, Collection values);
 
 	// in-flight ideas:
 	//		* operator corresponding to the new "matches" HQL operator

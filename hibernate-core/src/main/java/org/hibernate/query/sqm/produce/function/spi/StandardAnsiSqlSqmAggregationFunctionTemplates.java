@@ -11,6 +11,7 @@ import java.math.BigInteger;
 import java.util.List;
 import java.util.Map;
 
+import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.metamodel.model.domain.spi.AllowableFunctionReturnType;
 import org.hibernate.query.sqm.produce.function.SqmFunctionTemplate;
 import org.hibernate.query.sqm.produce.function.StandardArgumentsValidators;
@@ -46,15 +47,16 @@ public class StandardAnsiSqlSqmAggregationFunctionTemplates {
 
 		@Override
 		protected SqmExpression generateSqmFunctionExpression(
+                SessionFactoryImplementor sessionFactory,
 				List<SqmExpression> arguments,
 				AllowableFunctionReturnType impliedResultType) {
 
 			assert !arguments.isEmpty();
 			if ( arguments.get( 0 ) == SqmCountStarFunction.STAR ) {
-				return new SqmCountStarFunction( impliedResultType );
+				return new SqmCountStarFunction( sessionFactory, impliedResultType );
 			}
 			else {
-				return new SqmCountFunction( arguments.get( 0 ), impliedResultType );
+				return new SqmCountFunction( sessionFactory, arguments.get( 0 ), impliedResultType );
 			}
 		}
 	}
@@ -77,6 +79,7 @@ public class StandardAnsiSqlSqmAggregationFunctionTemplates {
 
 		@Override
 		protected SqmExpression generateSqmFunctionExpression(
+                SessionFactoryImplementor sessionFactory,
 				List<SqmExpression> arguments,
 				AllowableFunctionReturnType impliedResultType) {
 			final SqmExpression argument = arguments.get( 0 );
@@ -86,10 +89,10 @@ public class StandardAnsiSqlSqmAggregationFunctionTemplates {
 					|| Double.class.isInstance( argumentJavaType );
 			final boolean needsCast = sqlCastTypeForFloatingPointArgTypes != null && !isFloatingPointNumber;
 			final SqmExpression argumentToPass = needsCast
-					? cast( argument, sqlCastTypeForFloatingPointArgTypes )
+					? cast( sessionFactory, argument, sqlCastTypeForFloatingPointArgTypes )
 					: argument;
 
-			return new SqmAvgFunction( argumentToPass );
+			return new SqmAvgFunction( sessionFactory, argumentToPass );
 		}
 	}
 
@@ -108,9 +111,10 @@ public class StandardAnsiSqlSqmAggregationFunctionTemplates {
 
 		@Override
 		protected SqmExpression generateSqmFunctionExpression(
+                SessionFactoryImplementor sessionFactory,
 				List<SqmExpression> arguments,
 				AllowableFunctionReturnType impliedResultType) {
-			return new SqmMaxFunction( arguments.get( 0 ) );
+			return new SqmMaxFunction( sessionFactory, arguments.get( 0 ) );
 		}
 	}
 
@@ -129,9 +133,10 @@ public class StandardAnsiSqlSqmAggregationFunctionTemplates {
 
 		@Override
 		protected SqmExpression generateSqmFunctionExpression(
+                SessionFactoryImplementor sessionFactory,
 				List<SqmExpression> arguments,
 				AllowableFunctionReturnType impliedResultType) {
-			return new SqmMinFunction( arguments.get( 0 ) );
+			return new SqmMinFunction( sessionFactory, arguments.get( 0 ) );
 		}
 	}
 
@@ -151,10 +156,12 @@ public class StandardAnsiSqlSqmAggregationFunctionTemplates {
 
 		@Override
 		protected SqmExpression generateSqmFunctionExpression(
+                SessionFactoryImplementor sessionFactory,
 				List<SqmExpression> arguments,
 				AllowableFunctionReturnType impliedResultType) {
 			final SqmExpression argument = arguments.get( 0 );
 			return new SqmSumFunction(
+					sessionFactory,
 					argument,
 					deduceReturnType( argument.getExpressableType() )
 			);
@@ -225,8 +232,9 @@ public class StandardAnsiSqlSqmAggregationFunctionTemplates {
 	private StandardAnsiSqlSqmAggregationFunctionTemplates() {
 	}
 
-	static SqmExpression cast(SqmExpression argument, String sqlCastTypeForFloatingPointArgTypes) {
+	static SqmExpression cast(SessionFactoryImplementor sessionFactory, SqmExpression argument, String sqlCastTypeForFloatingPointArgTypes) {
 		return new SqmCastFunction(
+				sessionFactory,
 				argument,
 				StandardSpiBasicTypes.DOUBLE,
 				sqlCastTypeForFloatingPointArgTypes

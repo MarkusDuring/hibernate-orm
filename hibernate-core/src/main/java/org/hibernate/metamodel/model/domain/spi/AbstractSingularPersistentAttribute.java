@@ -8,6 +8,11 @@ package org.hibernate.metamodel.model.domain.spi;
 
 import org.hibernate.boot.model.domain.PersistentAttributeMapping;
 import org.hibernate.property.access.spi.PropertyAccess;
+import org.hibernate.query.sqm.produce.spi.SqmCreationContext;
+import org.hibernate.query.sqm.tree.SqmJoinType;
+import org.hibernate.query.sqm.tree.expression.domain.SqmNavigableReference;
+import org.hibernate.query.sqm.tree.from.SqmFrom;
+import org.hibernate.query.sqm.tree.from.SqmSingularNavigableJoin;
 
 /**
  * @author Steve Ebersole
@@ -29,6 +34,25 @@ public abstract class AbstractSingularPersistentAttribute<O,J>
 		);
 
 		this.disposition = disposition;
+	}
+
+	public SqmSingularNavigableJoin createJoin(
+			SqmFrom lhs,
+			SqmNavigableReference navigableReference,
+			String uniqueIdentifier,
+			String alias,
+			SqmJoinType joinType,
+			boolean fetched,
+			SqmCreationContext sqmCreationContext) {
+		return new SqmSingularNavigableJoin(
+				lhs,
+				navigableReference,
+				uniqueIdentifier,
+				alias,
+				joinType,
+				fetched,
+				sqmCreationContext
+		);
 	}
 
 	@Override

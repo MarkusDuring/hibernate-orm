@@ -26,7 +26,7 @@ import org.hibernate.query.sqm.tree.SqmInsertSelectStatement;
 import org.hibernate.query.sqm.tree.SqmSelectStatement;
 import org.hibernate.query.sqm.tree.SqmUpdateStatement;
 import org.hibernate.query.sqm.tree.from.SqmFrom;
-import org.hibernate.query.sqm.tree.select.SqmSelection;
+import org.hibernate.query.sqm.tree.select.SqmSelectionBase;
 import org.hibernate.sql.ast.produce.internal.SqlAstSelectDescriptorImpl;
 import org.hibernate.sql.ast.produce.spi.SqlAstBuildingContext;
 import org.hibernate.sql.ast.produce.spi.SqlAstSelectDescriptor;
@@ -151,7 +151,7 @@ public class SqmSelectToSqlAstConverter
 	private Stack<AttributeNodeContainer> entityGraphNodeStack = new StandardStack<>();
 
 	@Override
-	public Void visitSelection(SqmSelection sqmSelection) {
+	public Void visitSelection(SqmSelectionBase sqmSelection) {
 		final QueryResultProducer resultProducer = (QueryResultProducer) sqmSelection.getSelectableNode().accept( this );
 
 		if ( getQuerySpecStack().depth() > 1 ) {

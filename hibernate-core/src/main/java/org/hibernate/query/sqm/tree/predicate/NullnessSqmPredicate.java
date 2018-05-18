@@ -6,7 +6,9 @@
  */
 package org.hibernate.query.sqm.tree.predicate;
 
+import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.query.sqm.consume.spi.SemanticQueryWalker;
+import org.hibernate.query.sqm.tree.SqmCopyContext;
 import org.hibernate.query.sqm.tree.expression.SqmExpression;
 
 /**
@@ -15,17 +17,27 @@ import org.hibernate.query.sqm.tree.expression.SqmExpression;
 public class NullnessSqmPredicate extends AbstractNegatableSqmPredicate {
 	private final SqmExpression expression;
 
-	public NullnessSqmPredicate(SqmExpression expression) {
-		this( expression, false );
+	public NullnessSqmPredicate(SessionFactoryImplementor sessionFactory, SqmExpression expression) {
+		this( sessionFactory, expression, false );
 	}
 
-	public NullnessSqmPredicate(SqmExpression expression, boolean negated) {
-		super( negated );
+	public NullnessSqmPredicate(SessionFactoryImplementor sessionFactory, SqmExpression expression, boolean negated) {
+		super( sessionFactory, negated );
 		this.expression = expression;
 	}
 
 	public SqmExpression getExpression() {
 		return expression;
+	}
+
+	@Override
+	public NullnessSqmPredicate copy(SqmCopyContext context) {
+		return new NullnessSqmPredicate( sessionFactory, expression.copy( context ), isNegated() );
+	}
+
+	@Override
+	public SqmPredicate not() {
+		return new NullnessSqmPredicate( sessionFactory, expression, !isNegated() );
 	}
 
 	@Override

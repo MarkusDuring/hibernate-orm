@@ -6,6 +6,7 @@
  */
 package org.hibernate.query.sqm.tree.predicate;
 
+import org.hibernate.query.sqm.tree.SqmCopyContext;
 /**
  * @author Steve Ebersole
  */
@@ -30,5 +31,13 @@ public class SqmWhereClause {
 	@Override
 	public String toString() {
 		return "where " + predicate;
+	}
+
+	public SqmWhereClause copy(SqmCopyContext context) {
+		return new SqmWhereClause( predicate == null ? null : predicate.copy( context ) );
+	}
+
+	public void copyFrom(SqmWhereClause source, SqmCopyContext context) {
+		this.predicate = source.predicate == null ? null : source.predicate.copy( context );
 	}
 }

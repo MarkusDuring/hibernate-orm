@@ -6,6 +6,7 @@
  */
 package org.hibernate.query.sqm.tree.expression.function;
 
+import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.metamodel.model.domain.spi.AllowableFunctionReturnType;
 import org.hibernate.query.sqm.tree.expression.SqmExpression;
 import org.hibernate.sql.ast.produce.metamodel.spi.BasicValuedExpressableType;
@@ -20,9 +21,15 @@ public abstract class AbstractSqmAggregateFunction
 
 	private boolean distinct;
 
-	protected AbstractSqmAggregateFunction(SqmExpression argument, AllowableFunctionReturnType resultType) {
-		super( resultType );
+	protected AbstractSqmAggregateFunction(SessionFactoryImplementor sessionFactory, SqmExpression argument, AllowableFunctionReturnType resultType) {
+		super( sessionFactory, resultType );
 		this.argument = argument;
+	}
+
+	protected AbstractSqmAggregateFunction(SessionFactoryImplementor sessionFactory, SqmExpression argument, AllowableFunctionReturnType resultType, boolean distinct) {
+		super( sessionFactory, resultType );
+		this.argument = argument;
+		this.distinct = distinct;
 	}
 
 	@Override

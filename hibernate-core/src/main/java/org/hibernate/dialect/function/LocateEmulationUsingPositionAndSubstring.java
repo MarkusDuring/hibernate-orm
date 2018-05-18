@@ -18,6 +18,7 @@ import org.hibernate.query.sqm.produce.function.internal.SelfRenderingSqmFunctio
 import org.hibernate.query.sqm.produce.function.spi.AbstractSqmFunctionTemplate;
 import org.hibernate.query.sqm.produce.function.spi.SelfRenderingFunctionSupport;
 import org.hibernate.query.sqm.produce.function.spi.SqmFunctionRegistryAware;
+import org.hibernate.query.sqm.tree.SqmCopyContext;
 import org.hibernate.query.sqm.tree.expression.SqmBinaryArithmetic;
 import org.hibernate.query.sqm.tree.expression.SqmLiteralInteger;
 import org.hibernate.query.sqm.tree.expression.SqmExpression;
@@ -44,8 +45,6 @@ import org.hibernate.type.spi.StandardSpiBasicTypes;
 public class LocateEmulationUsingPositionAndSubstring
 		extends AbstractSqmFunctionTemplate
 		implements SqmFunctionRegistryAware {
-	public static final SqmExpression ONE = new SqmLiteralInteger( 1 );
-
 	private final SqmFunctionProducer positionFunctionProducer;
 	private final SqmFunctionProducer substringFunctionProducer;
 
@@ -53,10 +52,11 @@ public class LocateEmulationUsingPositionAndSubstring
 
 	public LocateEmulationUsingPositionAndSubstring() {
 		this(
-				(registry, type, arguments) -> {
+				(sessionFactory, registry, type, arguments) -> {
 					final SqmFunctionTemplate template = registry.findFunctionTemplate( "substring" );
 					if ( template == null ) {
 						return new SqmSubstringFunction(
+								sessionFactory,
 								(BasicValuedExpressableType) type,
 								arguments.get( 1 ),
 								arguments.get( 2 ),
@@ -64,7 +64,7 @@ public class LocateEmulationUsingPositionAndSubstring
 						);
 					}
 					else {
-						return template.makeSqmFunctionExpression( arguments, type );
+						return template.makeSqmFunctionExpression( sessionFactory, arguments, type );
 					}
 				}
 		);
@@ -72,17 +72,18 @@ public class LocateEmulationUsingPositionAndSubstring
 
 	public LocateEmulationUsingPositionAndSubstring(SqmFunctionProducer substringFunctionProducer) {
 		this(
-				(registry, type, arguments) -> {
+				(sessionFactory, registry, type, arguments) -> {
 					final SqmFunctionTemplate template = registry.findFunctionTemplate( "substring" );
 					if ( template == null ) {
 						return new PositionFunction(
+								sessionFactory,
 								arguments.get( 0 ),
 								arguments.get( 1 ),
 								type
 						);
 					}
 					else {
-						return template.makeSqmFunctionExpression( arguments, type );
+						return template.makeSqmFunctionExpression( sessionFactory, arguments, type );
 					}
 				},
 				substringFunctionProducer
@@ -100,66 +101,74 @@ public class LocateEmulationUsingPositionAndSubstring
 
 	@Override
 	protected SqmExpression generateSqmFunctionExpression(
+			SessionFactoryImplementor sessionFactory,
 			List<SqmExpression> arguments,
 			AllowableFunctionReturnType impliedResultType) {
 
 		if ( arguments.size() == 2 ) {
-			return build3ArgVariation( arguments, impliedResultType );
+			return build3ArgVariation( sessionFactory, arguments, impliedResultType );
 		}
 		else {
-			return build2ArgVariation( arguments, impliedResultType );
+			return build2ArgVariation( sessionFactory, arguments, impliedResultType );
 		}
 
 
 	}
 
 	private SqmExpression build3ArgVariation(
+			SessionFactoryImplementor sessionFactory,
 			List<SqmExpression> arguments,
 			AllowableFunctionReturnType impliedResultType) {
 		final SqmExpression pattern = arguments.get( 0 );
 		final SqmExpression string = arguments.get( 1 );
 		final SqmExpression start = arguments.get( 2 );
-
+		final SqmExpression one = new SqmLiteralInteger( sessionFactory, 1 );
 		final ExpressableType resolvedIntResultType = impliedResultType != null
 				? impliedResultType
-				: start.getExpressableType() == null ? ONE.getExpressableType() : start.getExpressableType();
+				: start.getExpressableType() == null ? one.getExpressableType() : start.getExpressableType();
 
 		// (position( $pattern in substring($string, $start) ) + $start-1)
 
 		final SqmExpression substringCall = substringFunctionProducer.produce(
+				sessionFactory,
 				registry,
 				impliedResultType,
 				Arrays.asList( string, start )
 		);
 
 		final SqmExpression positionCall = positionFunctionProducer.produce(
+				sessionFactory,
 				registry,
 				impliedResultType,
 				Arrays.asList( pattern, substringCall )
 		);
 
 		final SqmExpression startMinusOne = new SqmBinaryArithmetic(
+				sessionFactory,
 				SqmBinaryArithmetic.Operation.SUBTRACT,
 				start,
-				ONE,
+				one,
 				resolvedIntResultType
 		);
 
 
 		final SqmExpression positionPluStartMinusOne = new SqmBinaryArithmetic(
+				sessionFactory,
 				SqmBinaryArithmetic.Operation.ADD,
 				positionCall,
 				startMinusOne,
 				resolvedIntResultType
 		);
 
-		return new SqmTuple( positionPluStartMinusOne );
+		return new SqmTuple( sessionFactory, positionPluStartMinusOne );
 	}
 
 	private SqmExpression build2ArgVariation(
+			SessionFactoryImplementor sessionFactory,
 			List<SqmExpression> arguments,
 			AllowableFunctionReturnType impliedResultType) {
 		return new PositionFunction(
+				sessionFactory,
 				arguments.get( 0 ),
 				arguments.get( 1 ),
 				impliedResultType
@@ -175,10 +184,12 @@ public class LocateEmulationUsingPositionAndSubstring
 			extends SelfRenderingSqmFunction
 			implements SelfRenderingFunctionSupport, SqlAstFunctionProducer, SqmNonStandardFunction {
 		public PositionFunction(
+				SessionFactoryImplementor sessionFactory,
 				SqmExpression pattern,
 				SqmExpression string,
 				AllowableFunctionReturnType resultType) {
 			super(
+					sessionFactory,
 					null,
 					Arrays.asList( pattern, string ),
 					resultType == null ? StandardSpiBasicTypes.STRING : resultType
@@ -188,6 +199,16 @@ public class LocateEmulationUsingPositionAndSubstring
 		@Override
 		public SelfRenderingFunctionSupport getRenderingSupport() {
 			return this;
+		}
+
+		@Override
+		public PositionFunction copy(SqmCopyContext context) {
+			return new PositionFunction(
+                    getSessionFactory(),
+					getSqmArguments().get( 0 ),
+					getSqmArguments().get( 1 ),
+					getExpressableType()
+			);
 		}
 
 		@Override

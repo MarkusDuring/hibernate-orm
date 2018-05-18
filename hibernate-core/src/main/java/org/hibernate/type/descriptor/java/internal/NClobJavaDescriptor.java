@@ -20,12 +20,15 @@ import org.hibernate.engine.jdbc.NClobImplementer;
 import org.hibernate.engine.jdbc.NClobProxy;
 import org.hibernate.engine.jdbc.WrappedClob;
 import org.hibernate.engine.jdbc.internal.CharacterStreamImpl;
+import org.hibernate.engine.spi.SessionFactoryImplementor;
+import org.hibernate.query.sqm.tree.expression.SqmLiteral;
 import org.hibernate.type.descriptor.java.spi.AbstractBasicJavaDescriptor;
 import org.hibernate.type.descriptor.java.MutabilityPlan;
 import org.hibernate.type.descriptor.spi.IncomparableComparator;
 import org.hibernate.type.descriptor.spi.JdbcRecommendedSqlTypeMappingContext;
 import org.hibernate.type.descriptor.spi.WrapperOptions;
 import org.hibernate.type.descriptor.sql.spi.SqlTypeDescriptor;
+import org.hibernate.type.spi.BasicType;
 
 /**
  * Descriptor for {@link Clob} handling.
@@ -80,6 +83,11 @@ public class NClobJavaDescriptor extends AbstractBasicJavaDescriptor<NClob> {
 			jdbcCode = Types.CLOB;
 		}
 		return context.getTypeConfiguration().getSqlTypeDescriptorRegistry().getDescriptor( jdbcCode );
+	}
+
+	@Override
+	public SqmLiteral<NClob> createLiteralExpression(SessionFactoryImplementor sessionFactory, BasicType<NClob> basicType, NClob value) {
+		return null;
 	}
 
 	@Override

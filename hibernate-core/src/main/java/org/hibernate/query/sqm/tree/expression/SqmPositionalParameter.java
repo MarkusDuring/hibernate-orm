@@ -6,13 +6,10 @@
  */
 package org.hibernate.query.sqm.tree.expression;
 
+import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.query.sqm.consume.spi.SemanticQueryWalker;
-import org.hibernate.sql.ast.produce.metamodel.spi.BasicValuedExpressableType;
+import org.hibernate.query.sqm.tree.SqmCopyContext;
 import org.hibernate.sql.ast.produce.metamodel.spi.ExpressableType;
-import org.hibernate.sql.ast.tree.spi.expression.Expression;
-import org.hibernate.sql.results.internal.ScalarQueryResultImpl;
-import org.hibernate.sql.results.spi.QueryResult;
-import org.hibernate.sql.results.spi.QueryResultCreationContext;
 import org.hibernate.type.descriptor.java.spi.JavaTypeDescriptor;
 
 /**
@@ -20,19 +17,31 @@ import org.hibernate.type.descriptor.java.spi.JavaTypeDescriptor;
  *
  * @author Steve Ebersole
  */
-public class SqmPositionalParameter implements SqmParameter {
+public class SqmPositionalParameter extends AbstractSqmExpression implements SqmParameter {
 	private final int position;
 	private final boolean canBeMultiValued;
+	private final Class<?> javaType;
 	private ExpressableType expressableType;
 
-	public SqmPositionalParameter(int position, boolean canBeMultiValued) {
+	public SqmPositionalParameter(SessionFactoryImplementor sessionFactory, int position, boolean canBeMultiValued) {
+		super( sessionFactory );
 		this.position = position;
 		this.canBeMultiValued = canBeMultiValued;
+		this.javaType = null;
 	}
 
-	public SqmPositionalParameter(int position, boolean canBeMultiValued, ExpressableType expressableType) {
+	public SqmPositionalParameter(SessionFactoryImplementor sessionFactory, int position, boolean canBeMultiValued, Class<?> javaType) {
+		super( sessionFactory );
 		this.position = position;
 		this.canBeMultiValued = canBeMultiValued;
+		this.javaType = javaType;
+	}
+
+	private SqmPositionalParameter(SessionFactoryImplementor sessionFactory, int position, boolean canBeMultiValued, Class<?> javaType, ExpressableType expressableType) {
+		super( sessionFactory );
+		this.position = position;
+		this.canBeMultiValued = canBeMultiValued;
+		this.javaType = javaType;
 		this.expressableType = expressableType;
 	}
 
@@ -44,6 +53,17 @@ public class SqmPositionalParameter implements SqmParameter {
 	@Override
 	public ExpressableType getInferableType() {
 		return getExpressableType();
+	}
+
+	@Override
+	public SqmPositionalParameter copy(SqmCopyContext context) {
+		return new SqmPositionalParameter(
+                getSessionFactory(),
+				position,
+				canBeMultiValued,
+				javaType,
+				expressableType
+		);
 	}
 
 	@Override
@@ -71,6 +91,14 @@ public class SqmPositionalParameter implements SqmParameter {
 		if ( expressableType != null ) {
 			this.expressableType = expressableType;
 		}
+	}
+
+	@Override
+	public Class getParameterType() {
+		if ( javaType != null ) {
+			return javaType;
+		}
+		return getJavaTypeDescriptor().getJavaType();
 	}
 
 	@Override

@@ -10,11 +10,14 @@ import java.sql.Types;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.hibernate.engine.spi.SessionFactoryImplementor;
+import org.hibernate.query.sqm.tree.expression.SqmLiteral;
 import org.hibernate.type.descriptor.java.spi.AbstractBasicJavaDescriptor;
 import org.hibernate.type.descriptor.spi.WrapperOptions;
 import org.hibernate.type.descriptor.java.spi.MutableMutabilityPlan;
 import org.hibernate.type.descriptor.spi.JdbcRecommendedSqlTypeMappingContext;
 import org.hibernate.type.descriptor.sql.spi.SqlTypeDescriptor;
+import org.hibernate.type.spi.BasicType;
 
 /**
  * @author Vlad Mihalcea
@@ -48,6 +51,11 @@ public class CommaDelimitedStringMapJavaTypeDescriptor extends AbstractBasicJava
     @Override
     public SqlTypeDescriptor getJdbcRecommendedSqlType(JdbcRecommendedSqlTypeMappingContext context) {
         return context.getTypeConfiguration().getSqlTypeDescriptorRegistry().getDescriptor( Types.VARCHAR );
+    }
+
+    @Override
+    public SqmLiteral<Map> createLiteralExpression(SessionFactoryImplementor sessionFactory, BasicType<Map> basicType, Map value) {
+        return null;
     }
 
     @Override

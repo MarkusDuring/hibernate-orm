@@ -7,13 +7,23 @@
 package org.hibernate.query.sqm.tree.expression.domain;
 
 import org.hibernate.metamodel.model.domain.spi.BasicCollectionIndex;
+import org.hibernate.query.sqm.produce.spi.SqmCreationContext;
+import org.hibernate.query.sqm.tree.SqmCopyContext;
 
 /**
  * @author Steve Ebersole
  */
 public class SqmCollectionIndexReferenceBasic extends AbstractSqmCollectionIndexReference {
-	public SqmCollectionIndexReferenceBasic(SqmPluralAttributeReference pluralAttributeBinding) {
-		super( pluralAttributeBinding );
+	public SqmCollectionIndexReferenceBasic(SqmPluralAttributeReference pluralAttributeBinding, SqmCreationContext creationContext) {
+		super( pluralAttributeBinding, creationContext );
+	}
+
+	@Override
+	public SqmCollectionIndexReferenceBasic copy(SqmCopyContext context) {
+		return new SqmCollectionIndexReferenceBasic(
+				getPluralAttributeReference().copy( context ),
+				context.getCreationContext()
+		);
 	}
 
 	@Override

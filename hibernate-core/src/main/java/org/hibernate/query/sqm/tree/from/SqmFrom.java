@@ -6,6 +6,7 @@
  */
 package org.hibernate.query.sqm.tree.from;
 
+import org.hibernate.query.sqm.tree.SqmCopyContext;
 import org.hibernate.query.sqm.tree.SqmTypedNode;
 import org.hibernate.query.sqm.tree.SqmVisitableNode;
 import org.hibernate.query.sqm.tree.expression.domain.SqmNavigableReference;
@@ -13,12 +14,17 @@ import org.hibernate.sql.ast.produce.metamodel.spi.TableGroupInfo;
 import org.hibernate.sql.ast.produce.spi.FromClauseIndex;
 import org.hibernate.sql.ast.tree.spi.from.TableGroup;
 
+import javax.persistence.criteria.From;
+
 /**
  * Models a Bindable's inclusion in the {@code FROM} clause.
  *
  * @author Steve Ebersole
  */
-public interface SqmFrom extends TableGroupInfo, SqmVisitableNode, SqmTypedNode {
+public interface SqmFrom extends TableGroupInfo, SqmVisitableNode, SqmTypedNode, From {
+	@Override
+	SqmFrom copy(SqmCopyContext context);
+
 	/**
 	 * Obtain reference to the FromElementSpace that this FromElement belongs to.
 	 */

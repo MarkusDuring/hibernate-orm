@@ -7,11 +7,15 @@
 package org.hibernate.query.sqm.tree.expression.domain;
 
 import org.hibernate.metamodel.model.domain.spi.SingularPersistentAttribute;
+import org.hibernate.query.sqm.tree.SqmCopyContext;
 
 /**
  * @author Steve Ebersole
  */
 public interface SqmSingularAttributeReference extends SqmAttributeReference {
+	@Override
+	SqmSingularAttributeReference copy(SqmCopyContext context);
+
 	@Override
 	SingularPersistentAttribute getReferencedNavigable();
 }

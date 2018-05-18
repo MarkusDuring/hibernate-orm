@@ -20,7 +20,7 @@ import org.hibernate.query.spi.QueryOptions;
 import org.hibernate.query.spi.ScrollableResultsImplementor;
 import org.hibernate.query.spi.SelectQueryPlan;
 import org.hibernate.query.sqm.tree.SqmSelectStatement;
-import org.hibernate.query.sqm.tree.select.SqmSelection;
+import org.hibernate.query.sqm.tree.select.SqmSelectionBase;
 import org.hibernate.sql.ast.consume.spi.SqlAstSelectToJdbcSelectConverter;
 import org.hibernate.sql.ast.produce.spi.SqlAstBuildingContext;
 import org.hibernate.sql.ast.produce.spi.SqlAstSelectDescriptor;
@@ -62,7 +62,7 @@ public class ConcreteSqmSelectQueryPlan<R> implements SelectQueryPlan<R> {
 			SqmSelectStatement sqm,
 			Class<R> resultType,
 			QueryOptions queryOptions) {
-		if ( resultType == null || resultType.isArray() ) {
+		if ( resultType == null || resultType == Object.class || resultType.isArray() ) {
 			if ( queryOptions.getTupleTransformer() != null ) {
 				return makeRowTransformerTupleTransformerAdapter( sqm, queryOptions );
 			}
@@ -77,7 +77,7 @@ public class ConcreteSqmSelectQueryPlan<R> implements SelectQueryPlan<R> {
 			// resultType is Tuple..
 			if ( queryOptions.getTupleTransformer() == null ) {
 				final List<TupleElement<?>> tupleElementList = new ArrayList<>();
-				for ( SqmSelection selection : sqm.getQuerySpec().getSelectClause().getSelections() ) {
+				for ( SqmSelectionBase selection : sqm.getQuerySpec().getSelectClause().getSelections() ) {
 					tupleElementList.add(
 							new TupleElementImpl(
 									selection.getSelectableNode().getJavaTypeDescriptor().getJavaType(),
@@ -132,7 +132,7 @@ public class ConcreteSqmSelectQueryPlan<R> implements SelectQueryPlan<R> {
 		return new RowTransformerTupleTransformerAdapter<>(
 				sqm.getQuerySpec().getSelectClause().getSelections()
 						.stream()
-						.map( SqmSelection::getAlias )
+						.map( SqmSelectionBase::getAlias )
 						.collect( StingArrayCollector.INSTANCE ),
 				queryOptions.getTupleTransformer()
 		);

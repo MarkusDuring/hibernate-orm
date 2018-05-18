@@ -7,6 +7,8 @@
 package org.hibernate.query.sqm.tree.expression.domain;
 
 import org.hibernate.query.sqm.consume.spi.SemanticQueryWalker;
+import org.hibernate.query.sqm.produce.spi.SqmCreationContext;
+import org.hibernate.query.sqm.tree.SqmCopyContext;
 import org.hibernate.sql.ast.produce.metamodel.spi.ExpressableType;
 
 /**
@@ -15,8 +17,16 @@ import org.hibernate.sql.ast.produce.metamodel.spi.ExpressableType;
 public class SqmMinIndexReferenceBasic
 		extends AbstractSpecificSqmCollectionIndexReference
 		implements SqmMinIndexReference {
-	public SqmMinIndexReferenceBasic(SqmPluralAttributeReference attributeBinding) {
-		super( attributeBinding );
+	public SqmMinIndexReferenceBasic(SqmPluralAttributeReference attributeBinding, SqmCreationContext creationContext) {
+		super( attributeBinding, creationContext );
+	}
+
+	@Override
+	public SqmMinIndexReferenceBasic copy(SqmCopyContext context) {
+		return new SqmMinIndexReferenceBasic(
+				getPluralAttributeReference().copy( context ),
+				context.getCreationContext()
+		);
 	}
 
 	@Override

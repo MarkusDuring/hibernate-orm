@@ -13,6 +13,7 @@ import org.hibernate.metamodel.model.domain.spi.SingularPersistentAttribute;
 import org.hibernate.query.sqm.SemanticException;
 import org.hibernate.query.sqm.produce.path.spi.SemanticPathPart;
 import org.hibernate.query.sqm.produce.spi.SqmCreationContext;
+import org.hibernate.query.sqm.tree.SqmCopyContext;
 import org.hibernate.query.sqm.tree.expression.SqmExpression;
 
 /**
@@ -23,9 +24,13 @@ public abstract class AbstractSqmSingularAttributeReference
 		implements SqmSingularAttributeReference {
 	public AbstractSqmSingularAttributeReference(
 			SqmNavigableContainerReference navigableContainerReference,
-			SingularPersistentAttribute referencedNavigable) {
-		super( navigableContainerReference, referencedNavigable );
+			SingularPersistentAttribute referencedNavigable,
+			SqmCreationContext creationContext) {
+		super( navigableContainerReference, referencedNavigable, creationContext );
 	}
+
+	@Override
+	public abstract AbstractSqmSingularAttributeReference copy(SqmCopyContext context);
 
 	@Override
 	public String getUniqueIdentifier() {

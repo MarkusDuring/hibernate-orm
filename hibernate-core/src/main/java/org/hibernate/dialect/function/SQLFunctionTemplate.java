@@ -8,6 +8,7 @@ package org.hibernate.dialect.function;
 
 import java.util.List;
 
+import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.metamodel.model.domain.spi.AllowableFunctionReturnType;
 import org.hibernate.query.sqm.produce.function.SqmFunctionTemplate;
 import org.hibernate.query.sqm.produce.function.internal.SelfRenderingSqmFunction;
@@ -81,9 +82,11 @@ public class SQLFunctionTemplate implements SqmFunctionTemplate {
 
 	@Override
 	public SqmExpression makeSqmFunctionExpression(
+            SessionFactoryImplementor sessionFactory,
 			List<SqmExpression> arguments,
 			AllowableFunctionReturnType impliedResultType) {
 		return new SelfRenderingSqmFunction(
+				sessionFactory,
 				renderer::render,
 				arguments,
 				impliedResultType

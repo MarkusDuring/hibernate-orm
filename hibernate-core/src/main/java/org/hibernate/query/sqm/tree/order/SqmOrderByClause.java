@@ -10,6 +10,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import org.hibernate.query.sqm.tree.SqmCopyContext;
 import org.hibernate.query.sqm.tree.expression.SqmExpression;
 
 /**
@@ -21,16 +22,37 @@ public class SqmOrderByClause {
 	public SqmOrderByClause() {
 	}
 
+	public SqmOrderByClause(List<SqmSortSpecification> sortSpecifications) {
+		this.sortSpecifications = sortSpecifications;
+	}
+
+	public SqmOrderByClause copy(SqmCopyContext context) {
+		List<SqmSortSpecification> newSortSpecifications = null;
+		if ( sortSpecifications != null ) {
+			newSortSpecifications = new ArrayList<>( sortSpecifications.size() );
+			for ( SqmSortSpecification sortSpecification : sortSpecifications ) {
+				newSortSpecifications.add( sortSpecification.copy( context ) );
+			}
+
+		}
+		return new SqmOrderByClause( newSortSpecifications );
+	}
+
 	public SqmOrderByClause addSortSpecification(SqmSortSpecification sortSpecification) {
 		if ( sortSpecifications == null ) {
-			sortSpecifications = new ArrayList<SqmSortSpecification>();
+			sortSpecifications = new ArrayList<>();
 		}
 		sortSpecifications.add( sortSpecification );
 		return this;
 	}
 
-	public SqmOrderByClause addSortSpecification(SqmExpression expression) {
-		addSortSpecification( new SqmSortSpecification( expression ) );
+	public SqmOrderByClause setSortSpecifications(List<SqmSortSpecification> sortSpecifications) {
+		if ( this.sortSpecifications == null ) {
+			this.sortSpecifications = new ArrayList<>( sortSpecifications.size() );
+		} else {
+			this.sortSpecifications.clear();
+		}
+		this.sortSpecifications.addAll( sortSpecifications );
 		return this;
 	}
 
@@ -41,5 +63,16 @@ public class SqmOrderByClause {
 		else {
 			return Collections.unmodifiableList( sortSpecifications );
 		}
+	}
+
+	@Override
+	public String toString() {
+		return "order by " + String.join(
+				", ",
+				sortSpecifications.stream()
+						.map(
+								item -> (CharSequence) item.toString()
+						)::iterator
+		);
 	}
 }

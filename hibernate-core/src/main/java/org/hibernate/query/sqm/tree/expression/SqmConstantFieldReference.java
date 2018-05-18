@@ -8,7 +8,9 @@ package org.hibernate.query.sqm.tree.expression;
 
 import java.lang.reflect.Field;
 
+import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.query.sqm.consume.spi.SemanticQueryWalker;
+import org.hibernate.query.sqm.tree.SqmCopyContext;
 import org.hibernate.sql.ast.produce.metamodel.spi.BasicValuedExpressableType;
 import org.hibernate.sql.ast.produce.metamodel.spi.ExpressableType;
 import org.hibernate.type.descriptor.java.spi.JavaTypeDescriptor;
@@ -18,17 +20,18 @@ import org.hibernate.type.descriptor.java.spi.JavaTypeDescriptor;
  *
  * @author Steve Ebersole
  */
-public class SqmConstantFieldReference<T> implements SqmConstantReference<T> {
+public class SqmConstantFieldReference<T> extends AbstractSqmExpression implements SqmConstantReference<T> {
 	private final Field sourceField;
 	private final T value;
 
 	private BasicValuedExpressableType typeDescriptor;
 
-	public SqmConstantFieldReference(Field sourceField, T value) {
-		this( sourceField, value, null );
+	public SqmConstantFieldReference(SessionFactoryImplementor sessionFactory, Field sourceField, T value) {
+		this( sessionFactory, sourceField, value, null );
 	}
 
-	public SqmConstantFieldReference(Field sourceField, T value, BasicValuedExpressableType typeDescriptor) {
+	public SqmConstantFieldReference(SessionFactoryImplementor sessionFactory, Field sourceField, T value, BasicValuedExpressableType typeDescriptor) {
+		super( sessionFactory );
 		this.sourceField = sourceField;
 		this.value = value;
 		this.typeDescriptor = typeDescriptor;
@@ -60,6 +63,11 @@ public class SqmConstantFieldReference<T> implements SqmConstantReference<T> {
 		if ( type != null ) {
 			this.typeDescriptor = (BasicValuedExpressableType) type;
 		}
+	}
+
+	@Override
+	public SqmConstantFieldReference copy(SqmCopyContext context) {
+		return this;
 	}
 
 	@Override

@@ -6,12 +6,15 @@
  */
 package org.hibernate.query.sqm.tree.expression.function;
 
-import java.util.List;
-
-import org.hibernate.sql.ast.produce.metamodel.spi.BasicValuedExpressableType;
+import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.query.sqm.consume.spi.SemanticQueryWalker;
+import org.hibernate.query.sqm.tree.SqmCopyContext;
 import org.hibernate.query.sqm.tree.expression.SqmConcat;
 import org.hibernate.query.sqm.tree.expression.SqmExpression;
+import org.hibernate.sql.ast.produce.metamodel.spi.BasicValuedExpressableType;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Differs from {@link SqmConcat} in that
@@ -30,9 +33,10 @@ public class SqmConcatFunction extends AbstractSqmFunction {
 	private final List<SqmExpression> expressions;
 
 	public SqmConcatFunction(
+			SessionFactoryImplementor sessionFactory,
 			BasicValuedExpressableType resultType,
 			List<SqmExpression> expressions) {
-		super( resultType );
+		super( sessionFactory, resultType );
 		this.expressions = expressions;
 
 		assert expressions != null;
@@ -51,6 +55,20 @@ public class SqmConcatFunction extends AbstractSqmFunction {
 
 	public List<SqmExpression> getExpressions() {
 		return expressions;
+	}
+
+	@Override
+	public SqmConcatFunction copy(SqmCopyContext context) {
+		List<SqmExpression> newExpressions = new ArrayList<>( expressions.size() );
+		for ( SqmExpression argument : expressions ) {
+			newExpressions.add( argument.copy( context ) );
+		}
+
+		return new SqmConcatFunction(
+                getSessionFactory(),
+				(BasicValuedExpressableType) getExpressableType(),
+				newExpressions
+		);
 	}
 
 	@Override

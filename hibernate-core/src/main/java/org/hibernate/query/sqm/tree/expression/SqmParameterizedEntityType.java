@@ -6,9 +6,10 @@
  */
 package org.hibernate.query.sqm.tree.expression;
 
-import org.hibernate.sql.ast.produce.metamodel.spi.ExpressableType;
+import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.query.sqm.consume.spi.SemanticQueryWalker;
-import org.hibernate.sql.ast.tree.spi.expression.Expression;
+import org.hibernate.query.sqm.tree.SqmCopyContext;
+import org.hibernate.sql.ast.produce.metamodel.spi.ExpressableType;
 import org.hibernate.sql.results.spi.QueryResult;
 import org.hibernate.sql.results.spi.QueryResultCreationContext;
 import org.hibernate.sql.results.spi.QueryResultProducer;
@@ -19,10 +20,11 @@ import org.hibernate.type.descriptor.java.spi.JavaTypeDescriptor;
  *
  * @author Steve Ebersole
  */
-public class SqmParameterizedEntityType implements SqmExpression, QueryResultProducer {
+public class SqmParameterizedEntityType extends AbstractSqmExpression implements SqmExpression, QueryResultProducer {
 	private final SqmParameter parameterExpression;
 
-	public SqmParameterizedEntityType(SqmParameter parameterExpression) {
+	public SqmParameterizedEntityType(SessionFactoryImplementor sessionFactory, SqmParameter parameterExpression) {
+		super( sessionFactory );
 		this.parameterExpression = parameterExpression;
 	}
 
@@ -34,6 +36,14 @@ public class SqmParameterizedEntityType implements SqmExpression, QueryResultPro
 	@Override
 	public ExpressableType getInferableType() {
 		return parameterExpression.getExpressableType();
+	}
+
+	@Override
+	public SqmParameterizedEntityType copy(SqmCopyContext context) {
+		return new SqmParameterizedEntityType(
+                getSessionFactory(),
+				parameterExpression.copy( context )
+		);
 	}
 
 	@Override

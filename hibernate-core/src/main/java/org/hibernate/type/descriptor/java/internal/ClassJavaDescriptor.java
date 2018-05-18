@@ -7,11 +7,15 @@
 package org.hibernate.type.descriptor.java.internal;
 
 import org.hibernate.HibernateException;
+import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.internal.util.ReflectHelper;
+import org.hibernate.query.sqm.tree.expression.SqmLiteral;
+import org.hibernate.query.sqm.tree.expression.SqmLiteralGeneric;
 import org.hibernate.type.descriptor.java.spi.AbstractBasicJavaDescriptor;
 import org.hibernate.type.descriptor.spi.JdbcRecommendedSqlTypeMappingContext;
 import org.hibernate.type.descriptor.spi.WrapperOptions;
 import org.hibernate.type.descriptor.sql.spi.SqlTypeDescriptor;
+import org.hibernate.type.spi.BasicType;
 
 /**
  * Descriptor for {@link Class} handling.
@@ -28,6 +32,16 @@ public class ClassJavaDescriptor extends AbstractBasicJavaDescriptor<Class> {
 	@Override
 	public SqlTypeDescriptor getJdbcRecommendedSqlType(JdbcRecommendedSqlTypeMappingContext context) {
 		return StringJavaDescriptor.INSTANCE.getJdbcRecommendedSqlType( context );
+	}
+
+	@Override
+	public SqmLiteral<Class> createLiteralExpression(SessionFactoryImplementor sessionFactory, BasicType<Class> basicType, Class value) {
+		return new SqmLiteralGeneric<>(
+				sessionFactory,
+				value,
+				basicType,
+				getMutabilityPlan()
+		);
 	}
 
 	public String toString(Class value) {

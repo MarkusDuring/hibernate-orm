@@ -6,29 +6,28 @@
  */
 package org.hibernate.query.sqm.tree.expression;
 
-import org.hibernate.sql.ast.produce.metamodel.spi.BasicValuedExpressableType;
+import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.query.sqm.consume.spi.SemanticQueryWalker;
+import org.hibernate.query.sqm.tree.SqmCopyContext;
 import org.hibernate.query.sqm.tree.internal.Helper;
-import org.hibernate.sql.ast.tree.spi.expression.Expression;
-import org.hibernate.sql.results.internal.ScalarQueryResultImpl;
-import org.hibernate.sql.results.spi.QueryResult;
-import org.hibernate.sql.results.spi.QueryResultCreationContext;
+import org.hibernate.sql.ast.produce.metamodel.spi.BasicValuedExpressableType;
 import org.hibernate.type.descriptor.java.spi.JavaTypeDescriptor;
 
 /**
  * @author Steve Ebersole
  */
-public class SqmConcat implements SqmExpression {
+public class SqmConcat extends AbstractSqmExpression implements SqmExpression {
 	private final SqmExpression lhsOperand;
 	private final SqmExpression rhsOperand;
 
 	private final BasicValuedExpressableType resultType;
 
-	public SqmConcat(SqmExpression lhsOperand, SqmExpression rhsOperand) {
-		this( lhsOperand, rhsOperand, (BasicValuedExpressableType) lhsOperand.getExpressableType() );
+	public SqmConcat(SessionFactoryImplementor sessionFactory, SqmExpression lhsOperand, SqmExpression rhsOperand) {
+		this( sessionFactory, lhsOperand, rhsOperand, (BasicValuedExpressableType) lhsOperand.getExpressableType() );
 	}
 
-	public SqmConcat(SqmExpression lhsOperand, SqmExpression rhsOperand, BasicValuedExpressableType resultType) {
+	private SqmConcat(SessionFactoryImplementor sessionFactory, SqmExpression lhsOperand, SqmExpression rhsOperand, BasicValuedExpressableType resultType) {
+		super( sessionFactory );
 		this.lhsOperand = lhsOperand;
 		this.rhsOperand = rhsOperand;
 		this.resultType = resultType;
@@ -50,6 +49,16 @@ public class SqmConcat implements SqmExpression {
 	@Override
 	public BasicValuedExpressableType getInferableType() {
 		return (BasicValuedExpressableType) Helper.firstNonNull( lhsOperand.getInferableType(), rhsOperand.getInferableType() ) ;
+	}
+
+	@Override
+	public SqmConcat copy(SqmCopyContext context) {
+		return new SqmConcat(
+                getSessionFactory(),
+				lhsOperand.copy( context ),
+				rhsOperand.copy( context ),
+				resultType
+		);
 	}
 
 	@Override

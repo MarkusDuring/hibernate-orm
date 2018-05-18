@@ -6,18 +6,25 @@
  */
 package org.hibernate.query.sqm.tree.expression.function;
 
+import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.metamodel.model.domain.spi.AllowableFunctionReturnType;
+import org.hibernate.query.sqm.tree.SqmCopyContext;
+import org.hibernate.query.sqm.tree.expression.AbstractSqmExpression;
 import org.hibernate.type.descriptor.java.spi.JavaTypeDescriptor;
 
 /**
  * @author Steve Ebersole
  */
-public abstract class AbstractSqmFunction implements SqmFunction {
+public abstract class AbstractSqmFunction extends AbstractSqmExpression implements SqmFunction {
 	private final AllowableFunctionReturnType resultType;
 
-	public AbstractSqmFunction(AllowableFunctionReturnType resultType) {
+	public AbstractSqmFunction(SessionFactoryImplementor sessionFactory, AllowableFunctionReturnType resultType) {
+		super( sessionFactory );
 		this.resultType = resultType;
 	}
+
+	@Override
+	public abstract AbstractSqmFunction copy(SqmCopyContext context);
 
 	@Override
 	public AllowableFunctionReturnType getExpressableType() {

@@ -17,13 +17,17 @@ import java.util.GregorianCalendar;
 import javax.persistence.TemporalType;
 
 import org.hibernate.cfg.Environment;
+import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.internal.util.compare.CalendarComparator;
+import org.hibernate.query.sqm.tree.expression.SqmLiteral;
+import org.hibernate.query.sqm.tree.expression.SqmLiteralGeneric;
 import org.hibernate.type.descriptor.java.spi.AbstractBasicJavaDescriptor;
 import org.hibernate.type.descriptor.java.spi.MutableMutabilityPlan;
 import org.hibernate.type.descriptor.java.spi.TemporalJavaDescriptor;
 import org.hibernate.type.descriptor.spi.JdbcRecommendedSqlTypeMappingContext;
 import org.hibernate.type.descriptor.spi.WrapperOptions;
 import org.hibernate.type.descriptor.sql.spi.SqlTypeDescriptor;
+import org.hibernate.type.spi.BasicType;
 import org.hibernate.type.spi.TypeConfiguration;
 
 /**
@@ -74,6 +78,11 @@ public class CalendarJavaDescriptor
 
 	protected CalendarJavaDescriptor() {
 		super( Calendar.class, CalendarMutabilityPlan.INSTANCE );
+	}
+
+	@Override
+	public SqmLiteral<Calendar> createLiteralExpression(SessionFactoryImplementor sessionFactory, BasicType<Calendar> basicType, Calendar value) {
+		return new SqmLiteralGeneric<>( sessionFactory, value, basicType, getMutabilityPlan() );
 	}
 
 	public String toString(Calendar calendar) {

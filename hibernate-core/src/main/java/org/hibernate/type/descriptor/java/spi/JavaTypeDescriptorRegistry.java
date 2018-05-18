@@ -13,7 +13,9 @@ import java.util.function.BiFunction;
 
 import org.hibernate.HibernateException;
 import org.hibernate.boot.model.TypeContributor;
+import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.internal.util.SerializationHelper;
+import org.hibernate.query.sqm.tree.expression.SqmLiteral;
 import org.hibernate.type.descriptor.java.internal.EnumJavaDescriptor;
 import org.hibernate.type.descriptor.java.internal.JavaTypeDescriptorBaseline;
 import org.hibernate.type.descriptor.java.internal.JavaTypeDescriptorBasicAdaptor;
@@ -21,6 +23,7 @@ import org.hibernate.type.descriptor.spi.JdbcRecommendedSqlTypeMappingContext;
 import org.hibernate.type.descriptor.spi.WrapperOptions;
 import org.hibernate.type.descriptor.sql.spi.SqlTypeDescriptor;
 import org.hibernate.type.descriptor.sql.spi.VarbinarySqlDescriptor;
+import org.hibernate.type.spi.BasicType;
 import org.hibernate.type.spi.TypeConfiguration;
 import org.hibernate.type.spi.TypeConfigurationAware;
 
@@ -249,6 +252,11 @@ public class JavaTypeDescriptorRegistry implements Serializable, JavaTypeDescrip
 		@Override
 		public SqlTypeDescriptor getJdbcRecommendedSqlType(JdbcRecommendedSqlTypeMappingContext context) {
 			return sqlTypeDescriptor;
+		}
+
+		@Override
+		public SqmLiteral<T> createLiteralExpression(SessionFactoryImplementor sessionFactory, BasicType<T> basicType, T value) {
+			return null;
 		}
 
 		@Override

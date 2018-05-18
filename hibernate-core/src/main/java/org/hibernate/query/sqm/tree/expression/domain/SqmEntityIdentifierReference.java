@@ -8,10 +8,12 @@ package org.hibernate.query.sqm.tree.expression.domain;
 
 import org.hibernate.metamodel.model.domain.spi.EntityIdentifier;
 
+import javax.persistence.criteria.Path;
+
 /**
  * @author Steve Ebersole
  */
-public interface SqmEntityIdentifierReference extends SqmNavigableReference {
+public interface SqmEntityIdentifierReference extends SqmNavigableReference, Path {
 	@Override
 	EntityIdentifier getReferencedNavigable();
 }

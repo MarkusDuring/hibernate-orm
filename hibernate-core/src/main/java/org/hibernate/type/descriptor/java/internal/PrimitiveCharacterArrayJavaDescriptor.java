@@ -13,11 +13,14 @@ import java.util.Arrays;
 
 import org.hibernate.engine.jdbc.CharacterStream;
 import org.hibernate.engine.jdbc.internal.CharacterStreamImpl;
+import org.hibernate.engine.spi.SessionFactoryImplementor;
+import org.hibernate.query.sqm.tree.expression.SqmLiteral;
 import org.hibernate.type.descriptor.java.spi.AbstractBasicJavaDescriptor;
 import org.hibernate.type.descriptor.java.spi.ArrayMutabilityPlan;
 import org.hibernate.type.descriptor.spi.JdbcRecommendedSqlTypeMappingContext;
 import org.hibernate.type.descriptor.spi.WrapperOptions;
 import org.hibernate.type.descriptor.sql.spi.SqlTypeDescriptor;
+import org.hibernate.type.spi.BasicType;
 
 /**
  * Descriptor for {@code char[]} handling.
@@ -38,6 +41,11 @@ public class PrimitiveCharacterArrayJavaDescriptor extends AbstractBasicJavaDesc
 
 	public char[] fromString(String string) {
 		return string.toCharArray();
+	}
+
+	@Override
+	public SqmLiteral<char[]> createLiteralExpression(SessionFactoryImplementor sessionFactory, BasicType<char[]> basicType, char[] value) {
+		return null;
 	}
 
 	@Override

@@ -6,26 +6,40 @@
  */
 package org.hibernate.query.sqm.tree.expression;
 
+import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.query.sqm.consume.spi.SemanticQueryWalker;
+import org.hibernate.query.sqm.tree.SqmCopyContext;
 import org.hibernate.sql.ast.produce.metamodel.spi.ExpressableType;
 import org.hibernate.type.descriptor.java.spi.JavaTypeDescriptor;
 
 /**
  * @author Steve Ebersole
  */
-public class SqmNamedParameter implements SqmParameter {
+public class SqmNamedParameter extends AbstractSqmExpression implements SqmParameter {
 	private final String name;
 	private final boolean canBeMultiValued;
+	private final Class<?> javaType;
 	private ExpressableType expressableType;
 
-	public SqmNamedParameter(String name, boolean canBeMultiValued) {
+	public SqmNamedParameter(SessionFactoryImplementor sessionFactory, String name, boolean canBeMultiValued) {
+		super( sessionFactory );
 		this.name = name;
 		this.canBeMultiValued = canBeMultiValued;
+		this.javaType = null;
 	}
 
-	public SqmNamedParameter(String name, boolean canBeMultiValued, ExpressableType expressableType) {
+	public SqmNamedParameter(SessionFactoryImplementor sessionFactory, String name, boolean canBeMultiValued, Class<?> javaType) {
+		super( sessionFactory );
 		this.name = name;
 		this.canBeMultiValued = canBeMultiValued;
+		this.javaType = javaType;
+	}
+
+	private SqmNamedParameter(SessionFactoryImplementor sessionFactory, String name, boolean canBeMultiValued, Class<?> javaType, ExpressableType expressableType) {
+		super( sessionFactory );
+		this.name = name;
+		this.canBeMultiValued = canBeMultiValued;
+		this.javaType = javaType;
 		this.expressableType = expressableType;
 	}
 
@@ -44,6 +58,25 @@ public class SqmNamedParameter implements SqmParameter {
 		if ( expressableType != null ) {
 			this.expressableType = expressableType;
 		}
+	}
+
+	@Override
+	public SqmNamedParameter copy(SqmCopyContext context) {
+		return new SqmNamedParameter(
+                getSessionFactory(),
+				name,
+				canBeMultiValued,
+				javaType,
+				expressableType
+		);
+	}
+
+	@Override
+	public Class getParameterType() {
+		if ( javaType != null ) {
+			return javaType;
+		}
+		return getJavaTypeDescriptor().getJavaType();
 	}
 
 	@Override

@@ -6,6 +6,8 @@
  */
 package org.hibernate.query.sqm.tree.from;
 
+import org.hibernate.query.sqm.produce.spi.SqmCreationContext;
+import org.hibernate.query.sqm.tree.SqmCopyContext;
 import org.hibernate.query.sqm.tree.SqmJoinType;
 
 /**
@@ -18,13 +20,17 @@ public abstract class AbstractSqmJoin extends AbstractSqmFrom implements SqmJoin
 			SqmFromElementSpace fromElementSpace,
 			String uid,
 			String alias,
-			SqmJoinType joinType) {
-		super( fromElementSpace, uid, alias );
+			SqmJoinType joinType,
+			SqmCreationContext creationContext) {
+		super( fromElementSpace, uid, alias, creationContext );
 		this.joinType = joinType;
 	}
 
 	@Override
-	public SqmJoinType getJoinType() {
+	public abstract AbstractSqmJoin copy(SqmCopyContext context);
+
+	@Override
+	public SqmJoinType getSqmJoinType() {
 		return joinType;
 	}
 }

@@ -6,8 +6,15 @@
  */
 package org.hibernate.query.sqm.tree;
 
+import javax.persistence.criteria.CriteriaDelete;
+
 /**
  * @author Steve Ebersole
  */
-public interface SqmDeleteStatement extends SqmDeleteOrUpdateStatement {
+public interface SqmDeleteStatement extends SqmDeleteOrUpdateStatement, CriteriaDelete {
+    @Override
+    SqmDeleteStatement copy();
+
+    @Override
+    SqmDeleteStatement copy(SqmCopyContext context);
 }

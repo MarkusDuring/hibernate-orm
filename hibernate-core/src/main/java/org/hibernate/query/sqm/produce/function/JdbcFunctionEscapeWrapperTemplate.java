@@ -9,6 +9,7 @@ package org.hibernate.query.sqm.produce.function;
 import java.util.List;
 import java.util.Locale;
 
+import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.metamodel.model.domain.spi.AllowableFunctionReturnType;
 import org.hibernate.query.sqm.produce.SqmProductionException;
 import org.hibernate.query.sqm.produce.function.spi.AbstractSqmFunctionTemplate;
@@ -32,9 +33,10 @@ public class JdbcFunctionEscapeWrapperTemplate
 
 	@Override
 	protected SqmExpression generateSqmFunctionExpression(
+			SessionFactoryImplementor sessionFactory,
 			List<SqmExpression> arguments,
 			AllowableFunctionReturnType impliedResultType) {
-		final SqmExpression wrappedSqmExpression = wrapped.makeSqmFunctionExpression( arguments, impliedResultType );
+		final SqmExpression wrappedSqmExpression = wrapped.makeSqmFunctionExpression( sessionFactory, arguments, impliedResultType );
 		if ( !SqmFunction.class.isInstance( wrappedSqmExpression ) ) {
 			throw new SqmProductionException(
 					String.format(
@@ -45,6 +47,6 @@ public class JdbcFunctionEscapeWrapperTemplate
 					)
 			);
 		}
-		return new SqmJdbcFunctionEscapeWrapper( (SqmFunction) wrappedSqmExpression );
+		return new SqmJdbcFunctionEscapeWrapper( sessionFactory, (SqmFunction) wrappedSqmExpression );
 	}
 }

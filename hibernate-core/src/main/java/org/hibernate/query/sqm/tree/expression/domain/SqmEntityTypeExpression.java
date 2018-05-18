@@ -6,7 +6,10 @@
  */
 package org.hibernate.query.sqm.tree.expression.domain;
 
+import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.query.sqm.consume.spi.SemanticQueryWalker;
+import org.hibernate.query.sqm.tree.SqmCopyContext;
+import org.hibernate.query.sqm.tree.expression.AbstractSqmExpression;
 import org.hibernate.query.sqm.tree.expression.SqmExpression;
 import org.hibernate.sql.ast.produce.metamodel.spi.ExpressableType;
 import org.hibernate.type.descriptor.java.spi.JavaTypeDescriptor;
@@ -17,11 +20,20 @@ import org.hibernate.type.descriptor.java.spi.JavaTypeDescriptor;
  *
  * @author Steve Ebersole
  */
-public class SqmEntityTypeExpression implements SqmExpression {
+public class SqmEntityTypeExpression extends AbstractSqmExpression implements SqmExpression {
 	private final SqmNavigableReference binding;
 
-	public SqmEntityTypeExpression(SqmNavigableReference binding) {
+	public SqmEntityTypeExpression(SqmNavigableReference binding, SessionFactoryImplementor sessionFactory) {
+		super( sessionFactory );
 		this.binding = binding;
+	}
+
+	@Override
+	public SqmEntityTypeExpression copy(SqmCopyContext context) {
+		return new SqmEntityTypeExpression(
+				binding.copy( context ),
+				getSessionFactory()
+		);
 	}
 
 	public SqmNavigableReference getBinding() {

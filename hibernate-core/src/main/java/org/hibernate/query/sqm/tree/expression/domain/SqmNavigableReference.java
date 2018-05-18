@@ -9,6 +9,8 @@ package org.hibernate.query.sqm.tree.expression.domain;
 import org.hibernate.metamodel.model.domain.spi.Navigable;
 import org.hibernate.query.NavigablePath;
 import org.hibernate.query.sqm.produce.path.spi.SemanticPathPart;
+import org.hibernate.query.sqm.produce.spi.SqmCreationContext;
+import org.hibernate.query.sqm.tree.SqmCopyContext;
 import org.hibernate.query.sqm.tree.expression.SqmExpression;
 import org.hibernate.query.sqm.tree.from.SqmFromExporter;
 import org.hibernate.sql.ast.produce.metamodel.spi.NavigableReferenceInfo;
@@ -30,6 +32,11 @@ public interface SqmNavigableReference extends SqmExpression, NavigableReference
 	//		considering that NavigableReference is not really part of the SQL AST
 	//		not sure of the benefit of having a contract that serves to expose the
 	//		information needed to create NavigableReference as part of the SQL AST
+
+	@Override
+	SqmNavigableReference copy(SqmCopyContext context);
+
+	SqmCreationContext getCreationContext();
 
 	/**
 	 * Get the Navigable reference that is the source ("lhs") of this reference.

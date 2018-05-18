@@ -29,7 +29,7 @@ import org.hibernate.query.sqm.tree.expression.domain.SqmPluralAttributeReferenc
 import org.hibernate.query.sqm.tree.expression.domain.SqmSingularAttributeReference;
 import org.hibernate.query.sqm.tree.from.SqmFromElementSpace;
 import org.hibernate.query.sqm.tree.from.SqmRoot;
-import org.hibernate.query.sqm.tree.select.SqmSelection;
+import org.hibernate.query.sqm.tree.select.SqmSelectionBase;
 
 import org.junit.jupiter.api.Test;
 
@@ -54,7 +54,7 @@ public class SelectClauseTests extends BaseSqmUnitTest {
 	public void testSimpleAliasSelection() {
 		SqmSelectStatement statement = interpretSelect( "select p from Person p" );
 		assertEquals( 1, statement.getQuerySpec().getSelectClause().getSelections().size() );
-		SqmSelection selection = statement.getQuerySpec().getSelectClause().getSelections().get( 0 );
+		SqmSelectionBase selection = statement.getQuerySpec().getSelectClause().getSelections().get( 0 );
 		assertThat( selection.getSelectableNode(), instanceOf( SqmEntityReference.class ) );
 	}
 
@@ -62,7 +62,7 @@ public class SelectClauseTests extends BaseSqmUnitTest {
 	public void testSimpleAttributeSelection() {
 		SqmSelectStatement statement = interpretSelect( "select p.nickName from Person p" );
 		assertEquals( 1, statement.getQuerySpec().getSelectClause().getSelections().size() );
-		SqmSelection selection = statement.getQuerySpec().getSelectClause().getSelections().get( 0 );
+		SqmSelectionBase selection = statement.getQuerySpec().getSelectClause().getSelections().get( 0 );
 		assertThat( selection.getSelectableNode(), instanceOf( SqmSingularAttributeReference.class ) );
 	}
 
@@ -100,7 +100,7 @@ public class SelectClauseTests extends BaseSqmUnitTest {
 		final SqmSelectStatement selectStatement = interpretSelect( query );
 
 		final SqmQuerySpec querySpec = selectStatement.getQuerySpec();
-		final SqmSelection selection = querySpec.getSelectClause().getSelections().get( 0 );
+		final SqmSelectionBase selection = querySpec.getSelectClause().getSelections().get( 0 );
 
 		assertThat( querySpec.getFromClause().getFromElementSpaces().size(), is(1) );
 		final SqmFromElementSpace fromElementSpace = querySpec.getFromClause().getFromElementSpaces().get( 0 );
@@ -126,7 +126,7 @@ public class SelectClauseTests extends BaseSqmUnitTest {
 		final SqmSelectStatement selectStatement = interpretSelect( query );
 
 		final SqmQuerySpec querySpec = selectStatement.getQuerySpec();
-		final SqmSelection selection = querySpec.getSelectClause().getSelections().get( 0 );
+		final SqmSelectionBase selection = querySpec.getSelectClause().getSelections().get( 0 );
 
 		assertThat( querySpec.getFromClause().getFromElementSpaces().size(), is(2) );
 

@@ -9,15 +9,18 @@ package org.hibernate.query.sqm.tree.from;
 import org.hibernate.metamodel.model.domain.spi.EntityDescriptor;
 import org.hibernate.query.sqm.consume.spi.SemanticQueryWalker;
 import org.hibernate.query.sqm.produce.spi.SqmCreationContext;
+import org.hibernate.query.sqm.tree.SqmCopyContext;
 import org.hibernate.query.sqm.tree.SqmJoinType;
 import org.hibernate.query.sqm.tree.expression.domain.SqmEntityReference;
 import org.hibernate.type.descriptor.java.spi.JavaTypeDescriptor;
+
+import javax.persistence.criteria.Path;
 
 /**
  * @author Steve Ebersole
  */
 public class SqmCrossJoin extends AbstractSqmFrom implements SqmJoin {
-	private final SqmEntityReference joinedEntiytReference;
+	private final SqmEntityReference joinedEntityReference;
 
 	public SqmCrossJoin(
 			SqmFromElementSpace fromElementSpace,
@@ -28,14 +31,15 @@ public class SqmCrossJoin extends AbstractSqmFrom implements SqmJoin {
 		super(
 				fromElementSpace,
 				uid,
-				alias
-		);
-		this.joinedEntiytReference = new SqmEntityReference( entityDescriptor, this, creationContext );
+				alias,
+				creationContext
+        );
+		this.joinedEntityReference = new SqmEntityReference( entityDescriptor, this, creationContext );
 	}
 
 	@Override
 	public SqmEntityReference getNavigableReference() {
-		return joinedEntiytReference;
+		return joinedEntityReference;
 	}
 
 	public String getEntityName() {
@@ -43,8 +47,19 @@ public class SqmCrossJoin extends AbstractSqmFrom implements SqmJoin {
 	}
 
 	@Override
-	public SqmJoinType getJoinType() {
+	public SqmJoinType getSqmJoinType() {
 		return SqmJoinType.CROSS;
+	}
+
+	@Override
+	public SqmCrossJoin copy(SqmCopyContext context) {
+		return context.copy(this, () -> new SqmCrossJoin(
+				context.getCreationContext().getCurrentFromElementSpace(),
+				getUniqueIdentifier(),
+				getIdentificationVariable(),
+				(EntityDescriptor) joinedEntityReference.getReferencedNavigable(),
+				context.getCreationContext()
+		));
 	}
 
 	@Override
@@ -55,5 +70,10 @@ public class SqmCrossJoin extends AbstractSqmFrom implements SqmJoin {
 	@Override
 	public JavaTypeDescriptor getJavaTypeDescriptor() {
 		return getNavigableReference().getJavaTypeDescriptor();
+	}
+
+	@Override
+	public Path<?> getParentPath() {
+		return null;
 	}
 }

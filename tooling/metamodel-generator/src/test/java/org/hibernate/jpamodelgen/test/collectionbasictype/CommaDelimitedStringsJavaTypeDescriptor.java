@@ -12,11 +12,14 @@ import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import org.hibernate.engine.spi.SessionFactoryImplementor;
+import org.hibernate.query.sqm.tree.expression.SqmLiteral;
 import org.hibernate.type.descriptor.java.spi.AbstractBasicJavaDescriptor;
 import org.hibernate.type.descriptor.spi.WrapperOptions;
 import org.hibernate.type.descriptor.java.spi.MutableMutabilityPlan;
 import org.hibernate.type.descriptor.spi.JdbcRecommendedSqlTypeMappingContext;
 import org.hibernate.type.descriptor.sql.spi.SqlTypeDescriptor;
+import org.hibernate.type.spi.BasicType;
 
 /**
  * @author Vlad Mihalcea
@@ -47,6 +50,11 @@ public class CommaDelimitedStringsJavaTypeDescriptor extends AbstractBasicJavaDe
         List<String> values = new ArrayList<>();
         Collections.addAll( values, string.split( DELIMITER ) );
         return values;
+    }
+
+    @Override
+    public SqmLiteral<List> createLiteralExpression(SessionFactoryImplementor sessionFactory, BasicType<List> basicType, List value) {
+        return null;
     }
 
     @Override

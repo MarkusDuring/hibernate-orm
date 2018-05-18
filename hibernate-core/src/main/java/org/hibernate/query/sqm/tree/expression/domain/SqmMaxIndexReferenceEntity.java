@@ -7,6 +7,8 @@
 package org.hibernate.query.sqm.tree.expression.domain;
 
 import org.hibernate.metamodel.model.domain.spi.CollectionIndexEntity;
+import org.hibernate.query.sqm.produce.spi.SqmCreationContext;
+import org.hibernate.query.sqm.tree.SqmCopyContext;
 import org.hibernate.query.sqm.tree.from.SqmFrom;
 
 /**
@@ -17,8 +19,16 @@ public class SqmMaxIndexReferenceEntity
 		implements SqmMaxIndexReference, SqmEntityTypedReference {
 	private SqmFrom exportedFromElement;
 
-	public SqmMaxIndexReferenceEntity(SqmPluralAttributeReference pluralAttributeBinding) {
-		super( pluralAttributeBinding );
+	public SqmMaxIndexReferenceEntity(SqmPluralAttributeReference pluralAttributeBinding, SqmCreationContext creationContext) {
+		super( pluralAttributeBinding, creationContext );
+	}
+
+	@Override
+	public SqmMaxIndexReferenceEntity copy(SqmCopyContext context) {
+		return new SqmMaxIndexReferenceEntity(
+				getPluralAttributeReference().copy( context ),
+				getCreationContext()
+		);
 	}
 
 	@Override

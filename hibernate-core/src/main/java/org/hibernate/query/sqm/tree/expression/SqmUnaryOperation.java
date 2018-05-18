@@ -6,19 +6,17 @@
  */
 package org.hibernate.query.sqm.tree.expression;
 
+import org.hibernate.engine.spi.SessionFactoryImplementor;
+import org.hibernate.query.sqm.consume.spi.SemanticQueryWalker;
+import org.hibernate.query.sqm.tree.SqmCopyContext;
 import org.hibernate.sql.ast.produce.metamodel.spi.BasicValuedExpressableType;
 import org.hibernate.sql.ast.produce.metamodel.spi.ExpressableType;
-import org.hibernate.query.sqm.consume.spi.SemanticQueryWalker;
-import org.hibernate.sql.ast.tree.spi.expression.Expression;
-import org.hibernate.sql.results.internal.ScalarQueryResultImpl;
-import org.hibernate.sql.results.spi.QueryResult;
-import org.hibernate.sql.results.spi.QueryResultCreationContext;
 import org.hibernate.type.descriptor.java.spi.JavaTypeDescriptor;
 
 /**
  * @author Steve Ebersole
  */
-public class SqmUnaryOperation implements ImpliedTypeSqmExpression {
+public class SqmUnaryOperation extends AbstractSqmExpression implements ImpliedTypeSqmExpression {
 
 	public enum Operation {
 		PLUS,
@@ -30,11 +28,12 @@ public class SqmUnaryOperation implements ImpliedTypeSqmExpression {
 
 	private BasicValuedExpressableType typeDescriptor;
 
-	public SqmUnaryOperation(Operation operation, SqmExpression operand) {
-		this( operation, operand, (BasicValuedExpressableType) operand.getExpressableType() );
+	public SqmUnaryOperation(SessionFactoryImplementor sessionFactory, Operation operation, SqmExpression operand) {
+		this( sessionFactory, operation, operand, (BasicValuedExpressableType) operand.getExpressableType() );
 	}
 
-	public SqmUnaryOperation(Operation operation, SqmExpression operand, BasicValuedExpressableType typeDescriptor) {
+	private SqmUnaryOperation(SessionFactoryImplementor sessionFactory, Operation operation, SqmExpression operand, BasicValuedExpressableType typeDescriptor) {
+		super( sessionFactory );
 		this.operation = operation;
 		this.operand = operand;
 		this.typeDescriptor = typeDescriptor;
@@ -58,6 +57,16 @@ public class SqmUnaryOperation implements ImpliedTypeSqmExpression {
 				( (ImpliedTypeSqmExpression) operand ).impliedType( type );
 			}
 		}
+	}
+
+	@Override
+	public SqmUnaryOperation copy(SqmCopyContext context) {
+		return new SqmUnaryOperation(
+                getSessionFactory(),
+				operation,
+				operand.copy( context ),
+				typeDescriptor
+		);
 	}
 
 	@Override

@@ -9,11 +9,14 @@ package org.hibernate.type.descriptor.java.internal;
 import java.sql.Types;
 import java.time.Duration;
 
+import org.hibernate.engine.spi.SessionFactoryImplementor;
+import org.hibernate.query.sqm.tree.expression.SqmLiteral;
 import org.hibernate.type.descriptor.java.spi.AbstractBasicJavaDescriptor;
 import org.hibernate.type.descriptor.java.spi.ImmutableMutabilityPlan;
 import org.hibernate.type.descriptor.spi.JdbcRecommendedSqlTypeMappingContext;
 import org.hibernate.type.descriptor.spi.WrapperOptions;
 import org.hibernate.type.descriptor.sql.spi.SqlTypeDescriptor;
+import org.hibernate.type.spi.BasicType;
 
 /**
  * @author Steve Ebersole
@@ -32,6 +35,11 @@ public class DurationJavaDescriptor extends AbstractBasicJavaDescriptor<Duration
 	@Override
 	public SqlTypeDescriptor getJdbcRecommendedSqlType(JdbcRecommendedSqlTypeMappingContext context) {
 		return context.getTypeConfiguration().getSqlTypeDescriptorRegistry().getDescriptor( Types.BIGINT );
+	}
+
+	@Override
+	public SqmLiteral<Duration> createLiteralExpression(SessionFactoryImplementor sessionFactory, BasicType<Duration> basicType, Duration value) {
+		return null;
 	}
 
 	@Override

@@ -16,6 +16,7 @@ import org.hibernate.query.sqm.produce.function.StandardArgumentsValidators;
 import org.hibernate.query.sqm.produce.function.internal.SelfRenderingSqmFunction;
 import org.hibernate.query.sqm.produce.function.spi.AbstractSqmFunctionTemplate;
 import org.hibernate.query.sqm.produce.function.spi.SelfRenderingFunctionSupport;
+import org.hibernate.query.sqm.tree.SqmCopyContext;
 import org.hibernate.query.sqm.tree.expression.SqmExpression;
 import org.hibernate.query.sqm.tree.expression.function.SqmNonStandardFunction;
 import org.hibernate.sql.ast.consume.spi.SqlAppender;
@@ -44,9 +45,11 @@ public class NvlFunctionTemplate
 
 	@Override
 	protected SqmExpression generateSqmFunctionExpression(
+            SessionFactoryImplementor sessionFactory,
 			List<SqmExpression> arguments,
 			AllowableFunctionReturnType impliedResultType) {
 		return new SqmNvlFunction(
+				sessionFactory,
 				arguments.get( 0 ),
 				arguments.get( 1 ),
 				impliedResultType
@@ -57,10 +60,11 @@ public class NvlFunctionTemplate
 			extends SelfRenderingSqmFunction
 			implements SelfRenderingFunctionSupport, SqlAstFunctionProducer, SqmNonStandardFunction {
 		public SqmNvlFunction(
+				SessionFactoryImplementor sessionFactory,
 				SqmExpression arg1,
 				SqmExpression arg2,
 				AllowableFunctionReturnType impliedResultType) {
-			super( Arrays.asList( arg1, arg2 ), impliedResultType );
+			super( sessionFactory, Arrays.asList( arg1, arg2 ), impliedResultType );
 		}
 
 		@Override
@@ -81,6 +85,16 @@ public class NvlFunctionTemplate
 					NAME,
 					getSqmArguments().get( 0 ),
 					getSqmArguments().get( 1 )
+			);
+		}
+
+		@Override
+		public SqmNvlFunction copy(SqmCopyContext context) {
+			return new SqmNvlFunction(
+                    getSessionFactory(),
+					getSqmArguments().get( 0 ),
+					getSqmArguments().get( 1 ),
+					getExpressableType()
 			);
 		}
 
