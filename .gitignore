@@ -31,11 +31,13 @@ bin
 
 # NetBeans specific files/directories
 .nbattrs
+.nb-gradle-properties
 
 # Miscellaneous
 *.log
 .clover
 .DS_Store
+gradle-app.setting
 
 # JBoss Transactions
 ObjectStore

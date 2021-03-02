@@ -3118,4 +3118,13 @@ public abstract class Dialect implements ConversionContext {
 	public String getCreateTemporaryTableColumnAnnotation(int sqlTypeCode) {
 		return "";
 	}
+
+	/**
+	 * Database has native support for arrays.
+	 *
+	 * @return boolean
+	 */
+	public boolean hasArrayDatatypes() {
+		return false;
+	}
 }

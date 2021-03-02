@@ -298,4 +298,11 @@ abstract public class DialectChecks {
 			return dialect.getDefaultMultiTableBulkIdStrategy() instanceof GlobalTemporaryTableBulkIdStrategy;
 		}
 	}
+
+	public static class HasArrayDatatypes implements DialectCheck {
+		@Override
+		public boolean isMatch(Dialect dialect) {
+			return dialect.hasArrayDatatypes();
+		}
+	}
 }

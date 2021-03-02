@@ -703,4 +703,9 @@ public class HSQLDialect extends Dialect {
 	public String getCascadeConstraintsString() {
 		return " CASCADE ";
 	}
+
+	@Override
+	public boolean hasArrayDatatypes() {
+		return true;
+	}
 }
