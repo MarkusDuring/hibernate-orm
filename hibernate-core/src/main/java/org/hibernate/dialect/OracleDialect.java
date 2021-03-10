@@ -625,6 +625,16 @@ public class OracleDialect extends Dialect {
 	}
 
 	@Override
+	public boolean supportsArrayDataTypes() {
+		return true;
+	}
+
+	@Override
+	public String getArrayTypeName(String elementTypeName) {
+		return elementTypeName + " varray";
+	}
+
+	@Override
 	public void contributeTypes(TypeContributions typeContributions, ServiceRegistry serviceRegistry) {
 		super.contributeTypes( typeContributions, serviceRegistry );
 

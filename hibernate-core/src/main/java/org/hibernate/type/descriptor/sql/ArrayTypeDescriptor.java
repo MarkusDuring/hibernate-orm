@@ -82,7 +82,13 @@ public class ArrayTypeDescriptor implements SqlTypeDescriptor {
 
 	@Override
 	public <X> ValueBinder<X> getBinder(final JavaTypeDescriptor<X> javaTypeDescriptor) {
-		return new BasicBinder<X>( javaTypeDescriptor, this ) {
+		return new ArrayBinder<X>( javaTypeDescriptor, this) {
+
+			@Override
+			protected String getTypeName(WrapperOptions options) throws SQLException {
+				// TODO: this is just for test Oracle and should be removed
+				return "SMALLINTARRAY";
+			}
 
 			@Override
 			protected void doBind(PreparedStatement st, X value, int index, WrapperOptions options) throws SQLException {

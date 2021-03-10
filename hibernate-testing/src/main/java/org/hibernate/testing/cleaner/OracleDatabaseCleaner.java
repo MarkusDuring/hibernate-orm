@@ -71,6 +71,8 @@ public class OracleDatabaseCleaner implements DatabaseCleaner {
 										"WHERE owner = sys_context('USERENV', 'SESSION_USER')" +
 										// Normally, user tables aren't in sysaux
 										"      AND tablespace_name NOT IN ('SYSAUX')" +
+										// Exclude nested tables as they are deleted as part of the parent
+										"      AND nested = 'NO'" +
 										// Apparently, user tables have global stats off
 										"      AND global_stats = 'NO'" +
 										// Exclude the tables with names starting like 'DEF$_'

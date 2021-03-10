@@ -8,8 +8,13 @@ package org.hibernate.type.descriptor.java;
 
 import java.io.Serializable;
 import java.lang.reflect.Array;
+import java.lang.reflect.Method;
+import java.sql.Connection;
+import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 import org.hibernate.HibernateException;
 import org.hibernate.engine.jdbc.Size;
@@ -17,6 +22,7 @@ import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.type.BasicArrayType;
 import org.hibernate.type.BasicContainerType;
 import org.hibernate.type.BasicType;
+import org.hibernate.type.descriptor.ValueExtractor;
 import org.hibernate.type.descriptor.WrapperOptions;
 import org.hibernate.type.descriptor.sql.ObjectSqlTypeDescriptor;
 import org.hibernate.type.descriptor.sql.SqlTypeDescriptor;
@@ -29,9 +35,82 @@ import org.hibernate.type.descriptor.sql.SqlTypeDescriptor;
  */
 public class GenericArrayTypeDescriptor<T> extends AbstractClassTypeDescriptor<T[]> implements BasicContainerJavaTypeDescriptor<T> {
 
+	private static interface ArrayCreator {
+		java.sql.Array createArray(Connection connection, String typeName, Object[] object) throws SQLException;
+	}
+
+	private static class DefaultArrayCreator implements ArrayCreator {
+		@Override
+		public java.sql.Array createArray(Connection connection, String typeName, Object[] object) throws SQLException {
+			int cutIndex = typeName.indexOf( '(' );
+			if ( cutIndex > 0 ) {
+				// getTypeName for this case required length, etc, parameters.
+				// Cut them out and use database defaults.
+				typeName = typeName.substring( 0, cutIndex );
+			}
+			return connection.createArrayOf( typeName, object );
+		}
+	}
+
+	private static class OracleArrayCreator extends DefaultArrayCreator {
+
+		private static final Class<?> ORACLE_CONNECTION_CLASS;
+		private static final Method CREATE_ARRAY;
+
+		static {
+			Class<?> c = null;
+			Method m = null;
+			try {
+				c = Class.forName( "oracle.jdbc.OracleConnection" );
+				m = c.getMethod(
+						"createARRAY",
+						String.class,
+						Object.class
+				);
+			} catch (Exception ex) {
+				// Ignore
+			}
+			ORACLE_CONNECTION_CLASS = c;
+			CREATE_ARRAY = m;
+		}
+
+		public static ArrayCreator getInstance() {
+			if ( CREATE_ARRAY == null ) {
+				return new DefaultArrayCreator();
+			}
+			else {
+				return new OracleArrayCreator();
+			}
+		}
+
+		@Override
+		public java.sql.Array createArray(Connection connection, String typeName, Object[] object) throws SQLException {
+			if ( connection.isWrapperFor( ORACLE_CONNECTION_CLASS ) ) {
+				try {
+					return (java.sql.Array) CREATE_ARRAY.invoke(
+							connection.unwrap( ORACLE_CONNECTION_CLASS ),
+							// TODO: this is just for test Oracle and should be removed
+							"SMALLINTARRAY",
+							object
+					);
+				}
+				catch (SQLException | RuntimeException e) {
+					throw e;
+				}
+				catch (Exception e) {
+					throw new SQLException( "Couldn't create array for Oracle", e );
+				}
+			}
+			return super.createArray( connection, typeName, object );
+		}
+	}
+
+	private static final ArrayCreator ARRAY_CREATOR = OracleArrayCreator.getInstance();
+
 	private final JavaTypeDescriptor<T> componentDescriptor;
 	private final SqlTypeDescriptor componentSqlDescriptor;
 	private final Class<T> componentClass;
+	private final T[] emptyArray;
 
 	public GenericArrayTypeDescriptor(BasicType<T> baseDescriptor) {
 		this(
@@ -52,6 +131,7 @@ public class GenericArrayTypeDescriptor<T> extends AbstractClassTypeDescriptor<T
 		this.componentDescriptor = baseDescriptor;
 		this.componentClass = baseDescriptor.getJavaTypeClass();
 		this.componentSqlDescriptor = sqlTypeDescriptor;
+		this.emptyArray = (T[]) java.lang.reflect.Array.newInstance( componentClass, 0 );
 	}
 
 	private static <T> MutabilityPlan<T[]> determineMutabilityPlan(JavaTypeDescriptor<T> baseDescriptor) {
@@ -291,13 +371,7 @@ public class GenericArrayTypeDescriptor<T> extends AbstractClassTypeDescriptor<T
 				String typeName = session.getJdbcServices()
 						.getDialect()
 						.getTypeName( componentSqlDescriptor.getSqlType(), size );
-				int cutIndex = typeName.indexOf( '(' );
-				if ( cutIndex > 0 ) {
-					// getTypeName for this case required length, etc, parameters.
-					// Cut them out and use database defaults.
-					typeName = typeName.substring( 0, cutIndex );
-				}
-				return (X) session.connection().createArrayOf( typeName, unwrapped );
+				return (X) ARRAY_CREATOR.createArray( session.connection(), typeName, unwrapped );
 			}
 			catch ( SQLException ex ) {
 				// This basically shouldn't happen unless you've lost connection to the database.
@@ -338,21 +412,51 @@ public class GenericArrayTypeDescriptor<T> extends AbstractClassTypeDescriptor<T
 			throw unknownWrap( value.getClass() );
 		}
 
-		java.sql.Array original = (java.sql.Array) value;
-		try {
-			Object[] raw = (Object[]) original.getArray();
-			if (raw == null) {
-				return null;
+		// This implementation requires an intermediate array, not sure what performs better
+//		final java.sql.Array original = (java.sql.Array) value;
+//		try {
+//			final Object[] raw = (Object[]) original.getArray();
+//			if (raw == null) {
+//				return null;
+//			}
+//			final T[] wrapped = (T[]) java.lang.reflect.Array.newInstance( componentClass, raw.length );
+//			for (int i = 0; i < raw.length; i++) {
+//				wrapped[i] = componentDescriptor.wrap( raw[i], options );
+//			}
+//			return wrapped;
+//		}
+//		catch ( SQLException ex ) {
+//			// This basically shouldn't happen unless you've lost connection to the database.
+//			throw new HibernateException( ex );
+//		}
+//		finally {
+//			try {
+//				original.free();
+//			}
+//			catch (SQLException ex) {
+//				// Ignore
+//			}
+//		}
+		final java.sql.Array original = (java.sql.Array) value;
+		try (ResultSet resultSet = original.getResultSet()) {
+			final List<T> list = new ArrayList<>();
+			final ValueExtractor<T> extractor = componentSqlDescriptor.getExtractor( componentDescriptor );
+			while (resultSet.next()) {
+				list.add( extractor.extract( resultSet, 2, options ) );
 			}
-			T[] wrapped = (T[]) java.lang.reflect.Array.newInstance( componentClass, raw.length );
-			for (int i = 0; i < raw.length; i++) {
-				wrapped[i] = componentDescriptor.wrap( raw[i], options );
-			}
-			return (T[]) wrapped;
+			return list.toArray( emptyArray );
 		}
 		catch ( SQLException ex ) {
 			// This basically shouldn't happen unless you've lost connection to the database.
 			throw new HibernateException( ex );
+		}
+		finally {
+			try {
+				original.free();
+			}
+			catch (SQLException ex) {
+				// Ignore
+			}
 		}
 	}
 }

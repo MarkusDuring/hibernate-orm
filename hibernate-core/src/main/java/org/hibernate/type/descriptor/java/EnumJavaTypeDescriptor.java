@@ -6,6 +6,7 @@
  */
 package org.hibernate.type.descriptor.java;
 
+import java.math.BigDecimal;
 import java.sql.Types;
 import javax.persistence.EnumType;
 
@@ -88,6 +89,10 @@ public class EnumJavaTypeDescriptor<T extends Enum<T>> extends AbstractClassType
 		}
 		else if ( value instanceof Long ) {
 			return fromLong( (Long) value );
+		}
+		// Numeric arrays in Oracle will always use BigDecimal regardless of the scale
+		else if ( value instanceof BigDecimal ) {
+			return fromBigDecimal( (BigDecimal) value );
 		}
 		else if ( value instanceof Integer ) {
 			return fromInteger( (Integer) value );
@@ -185,6 +190,19 @@ public class EnumJavaTypeDescriptor<T extends Enum<T>> extends AbstractClassType
 	public T fromLong(Long relationalForm) {
 		if ( relationalForm == null ) {
 			return null;
+		}
+		return getJavaTypeClass().getEnumConstants()[ relationalForm.intValue() ];
+	}
+
+	/**
+	 * Interpret a numeric value as the ordinal of the enum type
+	 */
+	public T fromBigDecimal(BigDecimal relationalForm) {
+		if ( relationalForm == null ) {
+			return null;
+		}
+		if ( relationalForm.scale() != 0 ) {
+			throw new IllegalArgumentException( "Can't convert big decimal to enum value: " + relationalForm );
 		}
 		return getJavaTypeClass().getEnumConstants()[ relationalForm.intValue() ];
 	}
