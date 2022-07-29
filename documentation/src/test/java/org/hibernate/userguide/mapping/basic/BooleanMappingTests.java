@@ -17,6 +17,7 @@ import org.hibernate.metamodel.mapping.JdbcMapping;
 import org.hibernate.metamodel.mapping.internal.BasicAttributeMapping;
 import org.hibernate.metamodel.spi.MappingMetamodelImplementor;
 import org.hibernate.persister.entity.EntityPersister;
+import org.hibernate.type.descriptor.converter.AttributeConverterTypeAdapter;
 
 import org.hibernate.testing.orm.junit.DomainModel;
 import org.hibernate.testing.orm.junit.SessionFactory;
@@ -25,6 +26,7 @@ import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.isOneOf;
 
 /**
@@ -60,7 +62,8 @@ public class BooleanMappingTests {
 		{
 			final BasicAttributeMapping convertedYesNo = (BasicAttributeMapping) entityDescriptor.findAttributeMapping("convertedYesNo");
 			final JdbcMapping jdbcMapping = convertedYesNo.getJdbcMapping();
-			assertThat(jdbcMapping.getJavaTypeDescriptor().getJavaType(), equalTo(Character.class));
+			assertThat(jdbcMapping, instanceOf( AttributeConverterTypeAdapter.class));
+			assertThat(((AttributeConverterTypeAdapter<?>) jdbcMapping).getRelationalJtd().getJavaType(), equalTo(Character.class));
 			assertThat(
 					jdbcMapping.getJdbcType().getJdbcTypeCode(),
 					// could be NCHAR if nationalization is globally enabled
@@ -71,7 +74,8 @@ public class BooleanMappingTests {
 		{
 			final BasicAttributeMapping convertedTrueFalse = (BasicAttributeMapping) entityDescriptor.findAttributeMapping("convertedTrueFalse");
 			final JdbcMapping jdbcMapping = convertedTrueFalse.getJdbcMapping();
-			assertThat(jdbcMapping.getJavaTypeDescriptor().getJavaType(), equalTo(Character.class));
+			assertThat(jdbcMapping, instanceOf( AttributeConverterTypeAdapter.class));
+			assertThat(((AttributeConverterTypeAdapter<?>) jdbcMapping).getRelationalJtd().getJavaType(), equalTo(Character.class));
 			assertThat(
 					jdbcMapping.getJdbcType().getJdbcTypeCode(),
 					// could be NCHAR if nationalization is globally enabled
@@ -82,7 +86,8 @@ public class BooleanMappingTests {
 		{
 			final BasicAttributeMapping convertedNumeric = (BasicAttributeMapping) entityDescriptor.findAttributeMapping("convertedNumeric");
 			final JdbcMapping jdbcMapping = convertedNumeric.getJdbcMapping();
-			assertThat(jdbcMapping.getJavaTypeDescriptor().getJavaType(), equalTo(Integer.class));
+			assertThat(jdbcMapping, instanceOf( AttributeConverterTypeAdapter.class));
+			assertThat(((AttributeConverterTypeAdapter<?>) jdbcMapping).getRelationalJtd().getJavaType(), equalTo(Integer.class));
 			assertThat(
 					jdbcMapping.getJdbcType().getJdbcTypeCode(),
 					equalTo(Types.INTEGER)

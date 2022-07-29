@@ -24,6 +24,7 @@ import org.hibernate.sql.exec.spi.JdbcParameterBindings;
 import org.hibernate.sql.results.graph.DomainResult;
 import org.hibernate.sql.results.graph.DomainResultCreationState;
 import org.hibernate.sql.results.graph.basic.BasicResult;
+import org.hibernate.type.descriptor.converter.AttributeConverterTypeAdapter;
 
 /**
  * Represents a literal in the SQL AST.  This form accepts a {@link BasicValuedMapping}
@@ -39,7 +40,16 @@ public class QueryLiteral<T> implements Literal, DomainResultProducer<T> {
 	public QueryLiteral(T value, BasicValuedMapping type) {
 		if ( type instanceof ConvertibleModelPart ) {
 			final ConvertibleModelPart convertibleModelPart = (ConvertibleModelPart) type;
-			final BasicValueConverter valueConverter = convertibleModelPart.getValueConverter();
+			final BasicValueConverter valueConverter;
+			if ( convertibleModelPart.getValueConverter() != null ) {
+				valueConverter = convertibleModelPart.getValueConverter();
+			}
+//			else if ( convertibleModelPart.getJdbcMapping() instanceof AttributeConverterTypeAdapter<?> ) {
+//				valueConverter = ( (AttributeConverterTypeAdapter<?>) convertibleModelPart.getJdbcMapping() ).getValueConverter();
+//			}
+			else {
+				valueConverter = null;
+			}
 
 			if ( valueConverter != null ) {
 				final Object literalValue = value;

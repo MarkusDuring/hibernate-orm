@@ -17,10 +17,13 @@ import jakarta.persistence.Table;
 
 import org.hibernate.annotations.Immutable;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
+import org.hibernate.metamodel.mapping.JdbcMapping;
 import org.hibernate.metamodel.mapping.internal.BasicAttributeMapping;
+import org.hibernate.metamodel.model.convert.spi.BasicValueConverter;
 import org.hibernate.metamodel.model.convert.spi.JpaAttributeConverter;
 import org.hibernate.metamodel.spi.MappingMetamodelImplementor;
 import org.hibernate.persister.entity.EntityPersister;
+import org.hibernate.type.descriptor.converter.AttributeConverterTypeAdapter;
 import org.hibernate.type.descriptor.java.ImmutableMutabilityPlan;
 import org.hibernate.type.descriptor.java.MutabilityPlan;
 
@@ -52,12 +55,20 @@ public class BitSetConverterImmutableTests {
 
 		final EntityPersister entityDescriptor = mappingMetamodel.findEntityDescriptor(Product.class);
 		final BasicAttributeMapping attributeMapping = (BasicAttributeMapping) entityDescriptor.findAttributeMapping("bitSet");
+		final JdbcMapping jdbcMapping = attributeMapping.getJdbcMapping();
 
 		assertThat( attributeMapping.getJavaType().getJavaTypeClass(), equalTo( BitSet.class));
 
-		assertThat(attributeMapping.getValueConverter(), instanceOf(JpaAttributeConverter.class));
-		final JpaAttributeConverter converter = (JpaAttributeConverter) attributeMapping.getValueConverter();
-		assertThat(converter.getConverterBean().getBeanClass(), equalTo(BitSetConverter.class));
+		assertThat( jdbcMapping, instanceOf( AttributeConverterTypeAdapter.class) );
+		final BasicValueConverter<?, ?> converter = ( (AttributeConverterTypeAdapter<?>) jdbcMapping ).getValueConverter();
+		assertThat(
+				converter,
+				instanceOf( JpaAttributeConverter.class )
+		);
+		assertThat(
+				( (JpaAttributeConverter<?, ?>) converter ).getConverterBean().getBeanClass(),
+				equalTo( BitSetConverter.class )
+		);
 
 		Assertions.assertThat(attributeMapping.getExposedMutabilityPlan()).isNotInstanceOf(BitSetMutabilityPlan.class);
 		Assertions.assertThat(attributeMapping.getExposedMutabilityPlan()).isInstanceOf(ImmutableMutabilityPlan.class);
@@ -67,11 +78,11 @@ public class BitSetConverterImmutableTests {
 		Assertions.assertThat(((MutabilityPlan) attributeMapping.getExposedMutabilityPlan()).deepCopy(sample)).isSameAs(sample);
 
 		assertThat(
-				attributeMapping.getJdbcMapping().getJdbcType().getJdbcTypeCode(),
+				jdbcMapping.getJdbcType().getJdbcTypeCode(),
 				isOneOf(Types.VARCHAR, Types.NVARCHAR)
 		);
 
-		assertThat(attributeMapping.getJdbcMapping().getJavaTypeDescriptor().getJavaTypeClass(), equalTo(String.class));
+		assertThat(converter.getRelationalJavaType().getJavaTypeClass(), equalTo(String.class));
 	}
 
 	@Table(name = "products")

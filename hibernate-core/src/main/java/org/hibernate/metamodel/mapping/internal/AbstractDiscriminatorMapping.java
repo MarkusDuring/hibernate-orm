@@ -62,7 +62,7 @@ public abstract class AbstractDiscriminatorMapping implements EntityDiscriminato
 			EntityPersister entityDescriptor,
 			DiscriminatorType<?> discriminatorType,
 			MappingModelCreationProcess creationProcess) {
-		this.jdbcMapping = jdbcMapping;
+		this.jdbcMapping = discriminatorType;//jdbcMapping;
 
 		this.entityDescriptor = entityDescriptor;
 		this.discriminatorType = discriminatorType;
@@ -143,7 +143,7 @@ public abstract class AbstractDiscriminatorMapping implements EntityDiscriminato
 				sqlSelection.getValuesArrayPosition(),
 				resultVariable,
 				domainResultConverter.getDomainJavaType(),
-				domainResultConverter,
+				null,//domainResultConverter,
 				navigablePath
 		);
 	}
@@ -240,9 +240,9 @@ public abstract class AbstractDiscriminatorMapping implements EntityDiscriminato
 	}
 
 	private Object convertToRelational(Object domainValue) {
-		if ( domainResultConverter != null ) {
-			return domainResultConverter.toRelationalValue( domainValue );
-		}
+//		if ( domainResultConverter != null ) {
+//			return domainResultConverter.toRelationalValue( domainValue );
+//		}
 		return domainValue;
 	}
 

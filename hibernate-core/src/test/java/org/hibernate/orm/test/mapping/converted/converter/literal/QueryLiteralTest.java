@@ -92,7 +92,7 @@ public class QueryLiteralTest {
 		catch (Exception e) {
 			final Throwable rootCause = ExceptionHelper.getRootCause( e );
 			assertThat( rootCause, instanceOf( SqlTreeCreationException.class ) );
-			assertThat( rootCause.getMessage(), startsWith( "QueryLiteral type [" ) );
+			assertThat( rootCause.getMessage(), startsWith( "Literal type [" ) );
 			assertThat( rootCause.getMessage(), containsString( "] did not match domain Java-type [" ) );
 			assertThat( rootCause.getMessage(), containsString( "] nor JDBC Java-type [" ) );
 		}

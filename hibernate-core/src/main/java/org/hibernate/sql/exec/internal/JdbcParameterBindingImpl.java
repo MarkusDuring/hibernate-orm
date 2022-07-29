@@ -8,6 +8,7 @@ package org.hibernate.sql.exec.internal;
 
 import org.hibernate.metamodel.mapping.JdbcMapping;
 import org.hibernate.sql.exec.spi.JdbcParameterBinding;
+import org.hibernate.type.descriptor.converter.AttributeConverterTypeAdapter;
 
 /**
  * @author Andrea Boriero
@@ -17,7 +18,9 @@ public class JdbcParameterBindingImpl implements JdbcParameterBinding {
 	private final Object bindValue;
 
 	public JdbcParameterBindingImpl(JdbcMapping jdbcMapping, Object bindValue) {
-		assert bindValue == null || jdbcMapping.getJavaTypeDescriptor().isInstance( bindValue );
+		assert bindValue == null || jdbcMapping.getJavaTypeDescriptor().isInstance( bindValue )
+				|| jdbcMapping instanceof AttributeConverterTypeAdapter<?>
+				&& ( (AttributeConverterTypeAdapter<?>) jdbcMapping ).getRelationalJtd().isInstance( bindValue );
 		this.jdbcMapping = jdbcMapping;
 		this.bindValue = bindValue;
 	}

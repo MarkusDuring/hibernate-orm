@@ -78,7 +78,7 @@ public class ExplicitColumnDiscriminatorMappingImpl extends AbstractDiscriminato
 						columnFormula != null,
 						null,
 						null,
-						jdbcMappingToUse,
+						getJdbcMapping(),
 						getSessionFactory()
 
 				)

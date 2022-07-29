@@ -287,35 +287,35 @@ public class SqmUtil {
 				else {
 					if ( domainParamBinding.getType() instanceof AttributeConverterTypeAdapter
 							|| domainParamBinding.getType() instanceof ConvertibleModelPart ) {
-						final BasicValueConverter valueConverter;
-						final JdbcMapping jdbcMapping;
+//						final BasicValueConverter valueConverter;
+//						final JdbcMapping jdbcMapping;
+//
+//						if ( domainParamBinding.getType() instanceof AttributeConverterTypeAdapter ) {
+//							final AttributeConverterTypeAdapter<?> adapter = (AttributeConverterTypeAdapter<?>) domainParamBinding.getType();
+//							valueConverter = adapter.getAttributeConverter();
+//							jdbcMapping = adapter.getJdbcMapping();
+//						}
+//						else {
+//							final ConvertibleModelPart convertibleModelPart = (ConvertibleModelPart) domainParamBinding.getType();
+//							valueConverter = convertibleModelPart.getValueConverter();
+//							jdbcMapping = convertibleModelPart.getJdbcMapping();
+//						}
 
-						if ( domainParamBinding.getType() instanceof AttributeConverterTypeAdapter ) {
-							final AttributeConverterTypeAdapter<?> adapter = (AttributeConverterTypeAdapter<?>) domainParamBinding.getType();
-							valueConverter = adapter.getAttributeConverter();
-							jdbcMapping = adapter.getJdbcMapping();
-						}
-						else {
-							final ConvertibleModelPart convertibleModelPart = (ConvertibleModelPart) domainParamBinding.getType();
-							valueConverter = convertibleModelPart.getValueConverter();
-							jdbcMapping = convertibleModelPart.getJdbcMapping();
-						}
-
-						if ( valueConverter != null ) {
-							final Object convertedValue = valueConverter.toRelationalValue( domainParamBinding.getBindValue() );
-
-							for ( int i = 0; i < jdbcParamsBinds.size(); i++ ) {
-								final List<JdbcParameter> jdbcParams = jdbcParamsBinds.get( i );
-								assert jdbcParams.size() == 1;
-								final JdbcParameter jdbcParameter = jdbcParams.get( 0 );
-								jdbcParameterBindings.addBinding(
-										jdbcParameter,
-										new JdbcParameterBindingImpl( jdbcMapping, convertedValue )
-								);
-							}
-
-							continue;
-						}
+//						if ( valueConverter != null ) {
+//							final Object convertedValue = valueConverter.toRelationalValue( domainParamBinding.getBindValue() );
+//
+//							for ( int i = 0; i < jdbcParamsBinds.size(); i++ ) {
+//								final List<JdbcParameter> jdbcParams = jdbcParamsBinds.get( i );
+//								assert jdbcParams.size() == 1;
+//								final JdbcParameter jdbcParameter = jdbcParams.get( 0 );
+//								jdbcParameterBindings.addBinding(
+//										jdbcParameter,
+//										new JdbcParameterBindingImpl( jdbcMapping, convertedValue )
+//								);
+//							}
+//
+//							continue;
+//						}
 					}
 
 					final Object bindValue = domainParamBinding.getBindValue();

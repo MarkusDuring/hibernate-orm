@@ -679,7 +679,7 @@ public abstract class AbstractCollectionPersister
 
 		if ( elementBootDescriptor instanceof BasicValue ) {
 			final BasicValue.Resolution<?> basicTypeResolution = ( (BasicValue) elementBootDescriptor ).resolve();
-			this.elementConverter = basicTypeResolution.getValueConverter();
+			this.elementConverter = null;//basicTypeResolution.getValueConverter();
 			this.convertedElementType = basicTypeResolution.getJdbcMapping();
 		}
 		else {
@@ -689,7 +689,7 @@ public abstract class AbstractCollectionPersister
 
 		if ( indexBootDescriptor instanceof BasicValue ) {
 			final BasicValue.Resolution<?> basicTypeResolution = ( (BasicValue) indexBootDescriptor ).resolve();
-			this.indexConverter = basicTypeResolution.getValueConverter();
+			this.indexConverter = null;//basicTypeResolution.getValueConverter();
 			this.convertedIndexType = basicTypeResolution.getJdbcMapping();
 		}
 		else {

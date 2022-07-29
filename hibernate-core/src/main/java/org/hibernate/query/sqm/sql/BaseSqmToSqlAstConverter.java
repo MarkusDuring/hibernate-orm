@@ -55,6 +55,7 @@ import org.hibernate.internal.util.collections.StandardStack;
 import org.hibernate.loader.MultipleBagFetchException;
 import org.hibernate.metamodel.CollectionClassification;
 import org.hibernate.metamodel.MappingMetamodel;
+import org.hibernate.metamodel.RepresentationMode;
 import org.hibernate.metamodel.mapping.Association;
 import org.hibernate.metamodel.mapping.AttributeMapping;
 import org.hibernate.metamodel.mapping.BasicEntityIdentifierMapping;
@@ -99,6 +100,7 @@ import org.hibernate.metamodel.model.domain.ManagedDomainType;
 import org.hibernate.metamodel.model.domain.PluralPersistentAttribute;
 import org.hibernate.metamodel.model.domain.SingularPersistentAttribute;
 import org.hibernate.metamodel.model.domain.internal.AnyDiscriminatorSqmPath;
+import org.hibernate.persister.entity.DiscriminatorType;
 import org.hibernate.query.derived.AnonymousTupleTableGroupProducer;
 import org.hibernate.query.derived.AnonymousTupleType;
 import org.hibernate.metamodel.model.domain.internal.BasicSqmPathSource;
@@ -381,6 +383,7 @@ import org.hibernate.sql.results.internal.StandardEntityGraphTraversalStateImpl;
 import org.hibernate.type.BasicType;
 import org.hibernate.type.JavaObjectType;
 import org.hibernate.type.SqlTypes;
+import org.hibernate.type.descriptor.converter.AttributeConverterTypeAdapter;
 import org.hibernate.type.descriptor.java.BasicJavaType;
 import org.hibernate.type.descriptor.java.EnumJavaType;
 import org.hibernate.type.descriptor.java.JavaType;
@@ -1265,8 +1268,15 @@ public abstract class BaseSqmToSqlAstConverter<T extends Statement> extends Base
 					rootTableGroup
 			);
 			targetColumnReferenceConsumer.accept( discriminatorPath, discriminatorPath.getColumnReferences() );
+			final Object discriminatorDomainValue;
+			if ( entityDescriptor.getRepresentationStrategy().getMode() == RepresentationMode.POJO ) {
+				discriminatorDomainValue = entityDescriptor.getMappedClass();
+			}
+			else {
+				discriminatorDomainValue = entityDescriptor.getEntityName();
+			}
 			discriminatorExpression = new QueryLiteral<>(
-					entityDescriptor.getDiscriminatorValue(),
+					discriminatorDomainValue,
 					discriminatorMapping
 			);
 
@@ -4682,7 +4692,7 @@ public abstract class BaseSqmToSqlAstConverter<T extends Statement> extends Base
 		if ( inferableExpressible instanceof ConvertibleModelPart ) {
 			final ConvertibleModelPart convertibleModelPart = (ConvertibleModelPart) inferableExpressible;
 
-			if ( convertibleModelPart.getValueConverter() != null ) {
+			if ( convertibleModelPart.getValueConverter() != null || convertibleModelPart.getJdbcMapping() instanceof AttributeConverterTypeAdapter<?> ) {
 				return new QueryLiteral<>(
 						literal.getLiteralValue(),
 						convertibleModelPart
@@ -4701,19 +4711,20 @@ public abstract class BaseSqmToSqlAstConverter<T extends Statement> extends Base
 						.getEntityDescriptor( (Class<?>) literalValue );
 			}
 			else {
-				final JavaType<?> javaType = discriminatorMapping.getJdbcMapping().getJavaTypeDescriptor();
+				final DiscriminatorType<?> discriminatorType = (DiscriminatorType<?>) discriminatorMapping.getJdbcMapping();
+				final JavaType<?> relationalJavaType = discriminatorType.getRelationalJavaType();
 				final Object discriminatorValue;
-				if ( javaType.getJavaTypeClass().isInstance( literalValue ) ) {
+				if ( relationalJavaType.isInstance( literalValue ) ) {
 					discriminatorValue = literalValue;
 				}
 				else if ( literalValue instanceof CharSequence ) {
-					discriminatorValue = javaType.fromString( (CharSequence) literalValue );
+					discriminatorValue = relationalJavaType.fromString( (CharSequence) literalValue );
 				}
 				else if ( creationContext.getSessionFactory().getJpaMetamodel().getJpaCompliance().isLoadByIdComplianceEnabled() ) {
 					discriminatorValue = literalValue;
 				}
 				else {
-					discriminatorValue = javaType.coerce( literalValue, null );
+					discriminatorValue = relationalJavaType.coerce( literalValue, null );
 				}
 				final String entityName = discriminatorMapping.getConcreteEntityNameForDiscriminatorValue(
 						discriminatorValue
@@ -6299,7 +6310,13 @@ public abstract class BaseSqmToSqlAstConverter<T extends Statement> extends Base
 		if ( inferrableType instanceof ConvertibleModelPart ) {
 			final ConvertibleModelPart inferredPart = (ConvertibleModelPart) inferrableType;
 			final BasicValueConverter<Enum<?>,?> valueConverter = inferredPart.getValueConverter();
-			final Object jdbcValue = valueConverter.toRelationalValue( sqmEnumLiteral.getEnumValue() );
+			final Object jdbcValue;
+			if ( valueConverter == null ) {
+				jdbcValue = sqmEnumLiteral.getEnumValue();
+			}
+			else {
+				jdbcValue = valueConverter.toRelationalValue( sqmEnumLiteral.getEnumValue() );
+			}
 			return new QueryLiteral<>( jdbcValue, inferredPart );
 		}
 

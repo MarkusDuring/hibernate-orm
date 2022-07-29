@@ -23,6 +23,8 @@ import org.hibernate.metamodel.mapping.internal.BasicAttributeMapping;
 import org.hibernate.metamodel.model.convert.spi.BasicValueConverter;
 import org.hibernate.metamodel.model.convert.spi.JpaAttributeConverter;
 import org.hibernate.query.sql.spi.NativeQueryImplementor;
+import org.hibernate.type.BasicType;
+import org.hibernate.type.descriptor.converter.AttributeConverterJdbcTypeAdapter;
 import org.hibernate.type.descriptor.jdbc.spi.JdbcTypeRegistry;
 
 import org.hibernate.testing.orm.domain.StandardDomainModel;
@@ -293,12 +295,16 @@ public class NativeQueryResultBuilderTests {
 
 		assertThat( attrMapping.getJavaType().getJavaTypeClass(), equalTo( EntityOfBasics.Gender.class ) );
 
-		final BasicValueConverter valueConverter = attrMapping.getValueConverter();
+		final BasicValueConverter valueConverter = ( (BasicType<?>) attrMapping.getJdbcMapping() ).getValueConverter();
 		assertThat( valueConverter, instanceOf( JpaAttributeConverter.class ) );
 		assertThat( valueConverter.getDomainJavaType(), is( attrMapping.getJavaType() ) );
 		assertThat( valueConverter.getRelationalJavaType().getJavaTypeClass(), equalTo( Character.class ) );
 
-		assertThat( attrMapping.getJdbcMapping().getJdbcType(), is( jdbcTypeRegistry.getDescriptor( Types.CHAR ) ) );
+		assertThat(
+				( (AttributeConverterJdbcTypeAdapter) attrMapping.getJdbcMapping()
+						.getJdbcType() ).getUnderlyingJdbcType(),
+				is( jdbcTypeRegistry.getDescriptor( Types.CHAR ) )
+		);
 	}
 
 	@BeforeEach

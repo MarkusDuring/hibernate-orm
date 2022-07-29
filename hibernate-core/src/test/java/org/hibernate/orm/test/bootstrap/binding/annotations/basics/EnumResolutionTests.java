@@ -23,10 +23,12 @@ import org.hibernate.metamodel.mapping.JdbcMapping;
 import org.hibernate.metamodel.model.convert.internal.NamedEnumValueConverter;
 import org.hibernate.metamodel.model.convert.internal.OrdinalEnumValueConverter;
 import org.hibernate.metamodel.model.convert.spi.BasicValueConverter;
+import org.hibernate.metamodel.model.convert.spi.EnumValueConverter;
 import org.hibernate.metamodel.model.convert.spi.JpaAttributeConverter;
 import org.hibernate.type.BasicType;
 import org.hibernate.type.CustomType;
 import org.hibernate.type.EnumType;
+import org.hibernate.type.descriptor.converter.AttributeConverterJdbcTypeAdapter;
 import org.hibernate.type.descriptor.converter.AttributeConverterTypeAdapter;
 import org.hibernate.type.descriptor.jdbc.JdbcType;
 import org.hibernate.type.spi.TypeConfiguration;
@@ -191,10 +193,39 @@ public class EnumResolutionTests {
 		assertThat( resolution.getDomainJavaType().getJavaTypeClass(), equalTo( Values.class ) );
 
 		final JdbcMapping jdbcMapping = resolution.getJdbcMapping();
-		assertThat( jdbcMapping.getJdbcType(), equalTo( resolution.getJdbcType() ) );
-		assertThat( jdbcMapping.getJavaTypeDescriptor(), equalTo( resolution.getRelationalJavaType() ) );
+		final BasicValueConverter<?, ?> valueConverter;
+		if ( jdbcMapping instanceof CustomType<?> ) {
+			final EnumType<?> enumType = (EnumType<?>) ( (CustomType<?>) jdbcMapping ).getUserType();
+			final EnumValueConverter<?, ?> enumConverter = (EnumValueConverter<?, ?>) enumType.getValueConverter();
+			valueConverter = enumConverter;
+			assertThat(
+					enumConverter.getJdbcTypeCode(),
+					equalTo( resolution.getJdbcType().getJdbcTypeCode() )
+			);
+			assertThat(
+					enumConverter.getRelationalJavaType(),
+					equalTo( resolution.getRelationalJavaType() )
+			);
+		}
+		else if ( jdbcMapping instanceof AttributeConverterTypeAdapter<?> ) {
+			final AttributeConverterTypeAdapter<?> converterTypeAdapter = (AttributeConverterTypeAdapter<?>) jdbcMapping;
+			valueConverter = converterTypeAdapter.getValueConverter();
+			assertThat(
+					( (AttributeConverterJdbcTypeAdapter) jdbcMapping.getJdbcType() ).getUnderlyingJdbcType(),
+					equalTo( resolution.getJdbcType() )
+			);
+			assertThat(
+					(converterTypeAdapter).getRelationalJtd(),
+					equalTo( resolution.getRelationalJavaType() )
+			);
+		}
+		else {
+			valueConverter = resolution.getValueConverter();
+			assertThat( jdbcMapping.getJdbcType(), equalTo( resolution.getJdbcType() ) );
+			assertThat( jdbcMapping.getJavaTypeDescriptor(), equalTo( resolution.getRelationalJavaType() ) );
+		}
 
-		converterChecker.accept( resolution.getValueConverter() );
+		converterChecker.accept( valueConverter );
 
 		// verify the (legacy) interpretations used for writing
 		legacyTypeChecker.accept( resolution.getLegacyResolvedBasicType() );

@@ -36,6 +36,7 @@ import org.hibernate.mapping.Selectable;
 import org.hibernate.mapping.Subclass;
 import org.hibernate.mapping.Table;
 import org.hibernate.mapping.Value;
+import org.hibernate.metamodel.RepresentationMode;
 import org.hibernate.metamodel.spi.MappingMetamodelImplementor;
 import org.hibernate.metamodel.spi.RuntimeModelCreationContext;
 import org.hibernate.persister.spi.PersisterCreationContext;
@@ -745,7 +746,7 @@ public class SingleTableEntityPersister extends AbstractEntityPersister {
 			);
 		}
 
-		final BasicType<?> discriminatorType = (BasicType<?>) getDiscriminatorType();
+		final BasicType<?> discriminatorType = (BasicType<?>) getDiscriminatorMapping().getJdbcMapping();
 		final Expression sqlExpression = sqlExpressionResolver.resolveSqlExpression(
 				columnReferenceKey,
 				sqlAstProcessingState -> new ColumnReference(
@@ -762,6 +763,8 @@ public class SingleTableEntityPersister extends AbstractEntityPersister {
 		if ( hasSubclasses() ) {
 			final List<Expression> values = new ArrayList<>( fullDiscriminatorValues.length );
 			boolean hasNull = false, hasNonNull = false;
+			final MappingMetamodelImplementor mappingMetamodel = getFactory().getRuntimeMetamodels()
+					.getMappingMetamodel();
 			for ( Object discriminatorValue : fullDiscriminatorValues) {
 				if ( discriminatorValue == DiscriminatorHelper.NULL_DISCRIMINATOR ) {
 					hasNull = true;
@@ -770,7 +773,16 @@ public class SingleTableEntityPersister extends AbstractEntityPersister {
 					hasNonNull = true;
 				}
 				else {
-					values.add( new QueryLiteral<>( discriminatorValue, discriminatorType ) );
+					final String subclassEntityName = getSubclassForDiscriminatorValue( discriminatorValue );
+					final EntityPersister entityDescriptor = mappingMetamodel.getEntityDescriptor( subclassEntityName );
+					final Object discriminatorDomainValue;
+					if ( entityDescriptor.getRepresentationStrategy().getMode() == RepresentationMode.POJO ) {
+						discriminatorDomainValue = entityDescriptor.getMappedClass();
+					}
+					else {
+						discriminatorDomainValue = subclassEntityName;
+					}
+					values.add( new QueryLiteral<>( discriminatorDomainValue, discriminatorType ) );
 				}
 			}
 			final Predicate p = new InListPredicate( sqlExpression, values );
@@ -803,10 +815,17 @@ public class SingleTableEntityPersister extends AbstractEntityPersister {
 
 			return nullnessPredicate;
 		}
+		final Object discriminatorDomainValue;
+		if ( getRepresentationStrategy().getMode() == RepresentationMode.POJO ) {
+			discriminatorDomainValue = getMappedClass();
+		}
+		else {
+			discriminatorDomainValue = getEntityName();
+		}
 		return new ComparisonPredicate(
 				sqlExpression,
 				ComparisonOperator.EQUAL,
-				new QueryLiteral<>( value, discriminatorType )
+				new QueryLiteral<>( discriminatorDomainValue, discriminatorType )
 		);
 	}
 

@@ -32,7 +32,7 @@ public class BasicResult<T> implements DomainResult<T>, BasicResultGraphNode<T> 
 			int jdbcValuesArrayPosition,
 			String resultVariable,
 			JavaType<T> javaType) {
-		this( jdbcValuesArrayPosition, resultVariable, javaType, (NavigablePath) null );
+		this( jdbcValuesArrayPosition, resultVariable, javaType, null, null );
 	}
 
 	public BasicResult(
@@ -40,12 +40,7 @@ public class BasicResult<T> implements DomainResult<T>, BasicResultGraphNode<T> 
 			String resultVariable,
 			JavaType<T> javaType,
 			NavigablePath navigablePath) {
-		this.resultVariable = resultVariable;
-		this.javaType = javaType;
-
-		this.navigablePath = navigablePath;
-
-		this.assembler = new BasicResultAssembler<>( jdbcValuesArrayPosition, javaType );
+		this( jdbcValuesArrayPosition, resultVariable, javaType, null, navigablePath );
 	}
 
 	public BasicResult(

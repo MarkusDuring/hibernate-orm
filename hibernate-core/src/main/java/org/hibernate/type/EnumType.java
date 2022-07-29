@@ -81,7 +81,6 @@ public class EnumType<T extends Enum<T>>
 	private Class<T> enumClass;
 
 	private EnumValueConverter<T,Object> enumValueConverter;
-	private JdbcType jdbcType;
 	private ValueExtractor<T> jdbcValueExtractor;
 	private ValueBinder<T> jdbcValueBinder;
 
@@ -98,7 +97,7 @@ public class EnumType<T extends Enum<T>>
 		this.typeConfiguration = typeConfiguration;
 
 		this.enumValueConverter = enumValueConverter;
-		this.jdbcType = typeConfiguration.getJdbcTypeRegistry().getDescriptor( enumValueConverter.getJdbcTypeCode() );
+		final JdbcType jdbcType = typeConfiguration.getJdbcTypeRegistry().getDescriptor( enumValueConverter.getJdbcTypeCode() );
 		this.jdbcValueExtractor = jdbcType.getExtractor( enumValueConverter.getRelationalJavaType() );
 		this.jdbcValueBinder = jdbcType.getBinder( enumValueConverter.getRelationalJavaType() );
 	}
@@ -123,6 +122,7 @@ public class EnumType<T extends Enum<T>>
 
 		// the `reader != null` block handles annotations, while the `else` block
 		// handles hbm.xml
+		final JdbcType jdbcType;
 		if ( reader != null ) {
 			enumClass = (Class<T>) reader.getReturnedClass().asSubclass( Enum.class );
 
@@ -158,7 +158,7 @@ public class EnumType<T extends Enum<T>>
 					enumJavaType
 			);
 
-			final JdbcType jdbcType = relationalJavaType.getRecommendedJdbcType( indicators );
+			jdbcType = relationalJavaType.getRecommendedJdbcType( indicators );
 
 			if ( isOrdinal ) {
 				this.enumValueConverter = new OrdinalEnumValueConverter(
@@ -174,7 +174,6 @@ public class EnumType<T extends Enum<T>>
 						relationalJavaType
 				);
 			}
-			this.jdbcType = jdbcType;
 		}
 		else {
 			final String enumClassName = (String) parameters.get( ENUM );
@@ -186,7 +185,7 @@ public class EnumType<T extends Enum<T>>
 			}
 
 			this.enumValueConverter = interpretParameters( parameters );
-			this.jdbcType = typeConfiguration.getJdbcTypeRegistry().getDescriptor( enumValueConverter.getJdbcTypeCode() );
+			jdbcType = typeConfiguration.getJdbcTypeRegistry().getDescriptor( enumValueConverter.getJdbcTypeCode() );
 		}
 		this.jdbcValueExtractor = (ValueExtractor) jdbcType.getExtractor( enumValueConverter.getRelationalJavaType() );
 		this.jdbcValueBinder = (ValueBinder) jdbcType.getBinder( enumValueConverter.getRelationalJavaType() );

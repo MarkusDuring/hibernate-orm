@@ -7,18 +7,17 @@
 package org.hibernate.boot.model.process.internal;
 
 import java.util.function.Function;
-import jakarta.persistence.AttributeConverter;
 
 import org.hibernate.boot.model.convert.internal.ClassBasedConverterDescriptor;
 import org.hibernate.boot.model.convert.spi.ConverterDescriptor;
 import org.hibernate.boot.model.convert.spi.JpaAttributeConverterCreationContext;
-import org.hibernate.boot.registry.StandardServiceRegistry;
 import org.hibernate.boot.registry.classloading.spi.ClassLoaderService;
 import org.hibernate.boot.spi.MetadataBuildingContext;
 import org.hibernate.mapping.BasicValue;
 import org.hibernate.metamodel.mapping.JdbcMapping;
 import org.hibernate.metamodel.model.convert.spi.JpaAttributeConverter;
 import org.hibernate.type.BasicType;
+import org.hibernate.type.descriptor.converter.AttributeConverterJdbcTypeAdapter;
 import org.hibernate.type.descriptor.converter.AttributeConverterMutabilityPlanImpl;
 import org.hibernate.type.descriptor.converter.AttributeConverterTypeAdapter;
 import org.hibernate.type.descriptor.java.BasicJavaType;
@@ -178,39 +177,6 @@ public class NamedConverterResolution<J> implements BasicValue.Resolution<J> {
 				relationalJtd,
 				jdbcType
 		);
-//		this.jdbcMapping = new JdbcMapping() {
-//			private final ValueExtractor extractor = relationalStd.getExtractor( relationalJtd );
-//			private final ValueBinder binder = relationalStd.getBinder( relationalJtd );
-//
-//			@Override
-//			public JavaType getJavaType() {
-//				return relationalJtd;
-//			}
-//
-//			@Override
-//			public JdbcType getJdbcType() {
-//				return relationalStd;
-//			}
-//
-//			@Override
-//			public ValueExtractor getJdbcValueExtractor() {
-//				return extractor;
-//			}
-//
-//			@Override
-//			public ValueBinder getJdbcValueBinder() {
-//				return binder;
-//			}
-//		};
-
-//		this.jdbcMapping = new ConverterJdbcMappingImpl(
-//				domainJtd,
-//				relationalJtd,
-//				relationalStd,
-//				valueConverter,
-//				mutabilityPlan,
-//				typeConfiguration
-//		);
 
 		this.legacyResolvedType = new AttributeConverterTypeAdapter<>(
 				ConverterDescriptor.TYPE_NAME_PREFIX
@@ -221,7 +187,11 @@ public class NamedConverterResolution<J> implements BasicValue.Resolution<J> {
 						relationalJtd.getJavaType().getTypeName()
 				),
 				valueConverter,
-				jdbcType,
+				new AttributeConverterJdbcTypeAdapter(
+						valueConverter,
+						jdbcType,
+						valueConverter.getRelationalJavaType()
+				),
 				relationalJtd,
 				domainJtd,
 				mutabilityPlan

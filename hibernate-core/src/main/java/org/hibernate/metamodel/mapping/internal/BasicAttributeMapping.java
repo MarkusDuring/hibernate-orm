@@ -40,6 +40,7 @@ import org.hibernate.sql.results.graph.FetchParent;
 import org.hibernate.sql.results.graph.basic.BasicFetch;
 import org.hibernate.sql.results.graph.basic.BasicResult;
 import org.hibernate.tuple.ValueGeneration;
+import org.hibernate.type.BasicType;
 import org.hibernate.type.descriptor.java.JavaType;
 
 /**
@@ -326,9 +327,11 @@ public class BasicAttributeMapping
 		// Lazy property. A valuesArrayPosition of -1 will lead to
 		// returning a domain result assembler that returns LazyPropertyInitializer.UNFETCHED_PROPERTY
 		final EntityMappingType containingEntityMapping = findContainingEntityMapping();
+		final BasicValueConverter<?, ?> valueConverter;
 		if ( fetchTiming == FetchTiming.DELAYED
 				&& containingEntityMapping.getEntityPersister().getPropertyLaziness()[getStateArrayPosition()] ) {
 			valuesArrayPosition = -1;
+			valueConverter = null;
 		}
 		else {
 			final SqlAstCreationState sqlAstCreationState = creationState.getSqlAstCreationState();
@@ -340,6 +343,13 @@ public class BasicAttributeMapping
 
 			final SqlSelection sqlSelection = resolveSqlSelection( fetchablePath, tableGroup, true, fetchParent, creationState );
 			valuesArrayPosition = sqlSelection.getValuesArrayPosition();
+			if ( sqlSelection.getExpressionType() == getJdbcMapping() ) {
+				valueConverter = null;
+			}
+			else {
+				final BasicType<?> basicType = (BasicType<?>) sqlSelection.getExpressionType().getJdbcMappings().get( 0 );
+				valueConverter = basicType.getValueConverter();
+			}
 		}
 
 		return new BasicFetch<>(

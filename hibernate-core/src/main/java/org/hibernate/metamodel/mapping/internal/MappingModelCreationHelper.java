@@ -17,6 +17,7 @@ import org.hibernate.MappingException;
 import org.hibernate.NotYetImplementedFor6Exception;
 import org.hibernate.SharedSessionContract;
 import org.hibernate.annotations.NotFoundAction;
+import org.hibernate.boot.model.convert.spi.ConverterDescriptor;
 import org.hibernate.boot.model.relational.SqlStringGenerationContext;
 import org.hibernate.collection.internal.StandardArraySemantics;
 import org.hibernate.collection.internal.StandardBagSemantics;
@@ -73,6 +74,7 @@ import org.hibernate.metamodel.mapping.SelectableMapping;
 import org.hibernate.metamodel.mapping.SelectableMappings;
 import org.hibernate.metamodel.mapping.VirtualModelPart;
 import org.hibernate.metamodel.model.convert.spi.BasicValueConverter;
+import org.hibernate.metamodel.model.convert.spi.JpaAttributeConverter;
 import org.hibernate.metamodel.model.domain.NavigableRole;
 import org.hibernate.metamodel.spi.RuntimeModelCreationContext;
 import org.hibernate.persister.collection.CollectionPersister;
@@ -92,6 +94,8 @@ import org.hibernate.type.CompositeType;
 import org.hibernate.type.EntityType;
 import org.hibernate.type.ForeignKeyDirection;
 import org.hibernate.type.Type;
+import org.hibernate.type.descriptor.converter.AttributeConverterJdbcTypeAdapter;
+import org.hibernate.type.descriptor.converter.AttributeConverterTypeAdapter;
 import org.hibernate.type.descriptor.java.ImmutableMutabilityPlan;
 import org.hibernate.type.descriptor.java.JavaType;
 import org.hibernate.type.descriptor.java.MutabilityPlan;
@@ -262,10 +266,10 @@ public class MappingModelCreationHelper {
 		if ( valueConverter != null ) {
 			// we want to "decompose" the "type" into its various pieces as expected by the mapping
 			assert valueConverter.getRelationalJavaType() == resolution.getRelationalJavaType();
-
-			final BasicType<?> mappingBasicType = creationProcess.getCreationContext()
+			final TypeConfiguration typeConfiguration = creationProcess.getCreationContext()
 					.getDomainModel()
-					.getTypeConfiguration()
+					.getTypeConfiguration();
+			final BasicType<?> mappingBasicType = typeConfiguration
 					.getBasicTypeRegistry()
 					.resolve( valueConverter.getRelationalJavaType(), resolution.getJdbcType() );
 
@@ -276,6 +280,37 @@ public class MappingModelCreationHelper {
 //			else if ( valueGeneration.getValueGenerator() == null ) {
 //				// in-db generation
 //			}
+
+			final String convertedTypeName;
+			if ( valueConverter instanceof JpaAttributeConverter<?, ?> ) {
+				convertedTypeName = ConverterDescriptor.TYPE_NAME_PREFIX
+						+ ( (JpaAttributeConverter<?, ?>) valueConverter ).getConverterJavaType().getJavaType().getTypeName();
+			}
+			else {
+				convertedTypeName = ConverterDescriptor.TYPE_NAME_PREFIX
+						+ valueConverter.getClass().getTypeName();
+			}
+
+			// todo : cache the AttributeConverterTypeAdapter in case that AttributeConverter is applied multiple times.
+			final BasicType<?> convertedType = new AttributeConverterTypeAdapter(
+					convertedTypeName,
+					String.format(
+							"BasicType adapter for AttributeConverter<%s,%s>",
+							valueConverter.getDomainJavaType().getJavaType().getTypeName(),
+							valueConverter.getRelationalJavaType().getJavaType().getTypeName()
+					),
+					valueConverter,
+					// and finally construct the adapter, which injects the AttributeConverter
+					// calls into the binding/extraction process...
+					new AttributeConverterJdbcTypeAdapter(
+							valueConverter,
+							resolution.getJdbcType(),
+							valueConverter.getRelationalJavaType()
+					),
+					valueConverter.getRelationalJavaType(),
+					valueConverter.getDomainJavaType(),
+					null
+			);
 
 			return new BasicAttributeMapping(
 					attrName,
@@ -293,8 +328,8 @@ public class MappingModelCreationHelper {
 					length,
 					precision,
 					scale,
-					valueConverter,
-					mappingBasicType.getJdbcMapping(),
+					null, // don't expose the value converter here as it is part of the JDBC type adapter
+					convertedType,
 					declaringType,
 					propertyAccess,
 					valueGeneration
@@ -1350,7 +1385,7 @@ public class MappingModelCreationHelper {
 			return new BasicValuedCollectionPart(
 					collectionDescriptor,
 					CollectionPart.Nature.INDEX,
-					basicValue.resolve().getValueConverter(),
+					null,//basicValue.resolve().getValueConverter(),
 					selectableMapping
 			);
 		}
@@ -1435,7 +1470,7 @@ public class MappingModelCreationHelper {
 			return new BasicValuedCollectionPart(
 					collectionDescriptor,
 					CollectionPart.Nature.ELEMENT,
-					basicElement.resolve().getValueConverter(),
+					null,//basicElement.resolve().getValueConverter(),
 					selectableMapping
 			);
 		}

@@ -39,6 +39,7 @@ import org.hibernate.metamodel.mapping.EntityValuedModelPart;
 import org.hibernate.metamodel.mapping.EntityVersionMapping;
 import org.hibernate.metamodel.mapping.ManagedMappingType;
 import org.hibernate.metamodel.mapping.ModelPart;
+import org.hibernate.metamodel.spi.MappingMetamodelImplementor;
 import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.persister.entity.UniqueKeyLoadable;
 import org.hibernate.property.access.internal.PropertyAccessStrategyBackRefImpl;
@@ -332,28 +333,57 @@ public abstract class AbstractEntityInitializer extends AbstractFetchParentAcces
 			return entityDescriptor;
 		}
 
-		final Object discriminatorValue = discriminatorAssembler.assemble(
+		final Object discriminatorDomainValue = discriminatorAssembler.assemble(
 				rowProcessingState,
 				rowProcessingState.getJdbcValuesSourceProcessingState().getProcessingOptions()
 		);
-
-		final String concreteEntityName = entityDescriptor.getDiscriminatorMapping().getConcreteEntityNameForDiscriminatorValue( discriminatorValue );
+		final MappingMetamodelImplementor mappingMetamodel = session.getFactory()
+				.getRuntimeMetamodels()
+				.getMappingMetamodel();
+		final String concreteEntityName;
+		final EntityPersister concreteType;
+		// The discriminator domain value is either a Class or a String, depending on the representation mode
+		if ( discriminatorDomainValue instanceof Class<?> ) {
+			final EntityPersister subclassDescriptor = mappingMetamodel.findEntityDescriptor( (Class<?>) discriminatorDomainValue );
+			if ( subclassDescriptor == null ) {
+				concreteEntityName = entityDescriptor.getDiscriminatorMapping()
+						.getConcreteEntityNameForDiscriminatorValue( discriminatorDomainValue );
+				concreteType = concreteEntityName == null ? null : mappingMetamodel.getEntityDescriptor( concreteEntityName );
+			}
+			else {
+				concreteType = subclassDescriptor;
+				concreteEntityName = concreteType.getEntityName();
+			}
+		}
+		else if ( discriminatorDomainValue instanceof String ) {
+			final EntityPersister subclassDescriptor = mappingMetamodel.findEntityDescriptor( (String) discriminatorDomainValue );
+			if ( subclassDescriptor == null ) {
+				concreteEntityName = entityDescriptor.getDiscriminatorMapping()
+						.getConcreteEntityNameForDiscriminatorValue( discriminatorDomainValue );
+				concreteType = concreteEntityName == null ? null : mappingMetamodel.getEntityDescriptor( concreteEntityName );
+			}
+			else {
+				concreteType = subclassDescriptor;
+				concreteEntityName = concreteType.getEntityName();
+			}
+		}
+		else {
+			// We only get here when the value is null or something else invalid,
+			// in which case we want to fall back to the NULL_VALUE and NOT_NULL_VALUE discriminator values
+			concreteEntityName = entityDescriptor.getDiscriminatorMapping().getConcreteEntityNameForDiscriminatorValue( discriminatorDomainValue );
+			concreteType = concreteEntityName == null ? null : mappingMetamodel.getEntityDescriptor( concreteEntityName );
+		}
 
 		if ( concreteEntityName == null ) {
 			return entityDescriptor;
 		}
-
-		final EntityPersister concreteType = session.getFactory()
-				.getRuntimeMetamodels()
-				.getMappingMetamodel()
-				.findEntityDescriptor( concreteEntityName );
 
 		if ( concreteType == null || !concreteType.isTypeOrSuperType( entityDescriptor ) ) {
 			throw new WrongClassException(
 					concreteEntityName,
 					null,
 					entityDescriptor.getEntityName(),
-					discriminatorValue
+					discriminatorDomainValue
 			);
 		}
 

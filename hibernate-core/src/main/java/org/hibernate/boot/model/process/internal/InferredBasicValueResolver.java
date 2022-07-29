@@ -156,16 +156,6 @@ public class InferredBasicValueResolver {
 
 				legacyType = jdbcMapping;
 			}
-			else if ( explicitJdbcType != null ) {
-				// we also have an explicit JdbcType
-
-				jdbcMapping = typeConfiguration.getBasicTypeRegistry().resolve(
-						reflectedJtd,
-						explicitJdbcType
-				);
-
-				legacyType = jdbcMapping;
-			}
 			else {
 				// see if there is a registered BasicType for this JavaType and, if so, use it.
 				// this mimics the legacy handling
@@ -435,21 +425,21 @@ public class InferredBasicValueResolver {
 				jdbcType,
 				relationalJtd
 		);
-
+		final CustomType<E> customType = new CustomType<>(
+				new org.hibernate.type.EnumType<>(
+						enumJavaType.getJavaTypeClass(),
+						valueConverter,
+						typeConfiguration
+				),
+				typeConfiguration
+		);
 		return new InferredBasicValueResolution<>(
-				typeConfiguration.getBasicTypeRegistry().resolve( relationalJtd, jdbcType ),
+				customType,
 				enumJavaType,
 				relationalJtd,
 				jdbcType,
-				valueConverter,
-				new CustomType<>(
-						new org.hibernate.type.EnumType<>(
-								enumJavaType.getJavaTypeClass(),
-								valueConverter,
-								typeConfiguration
-						),
-						typeConfiguration
-				),
+				null,//valueConverter,
+				customType,
 				ImmutableMutabilityPlan.instance()
 		);
 	}
@@ -487,21 +477,21 @@ public class InferredBasicValueResolver {
 				jdbcType,
 				relationalJtd
 		);
-
+		final CustomType<E> customType = new CustomType<>(
+				new org.hibernate.type.EnumType<>(
+						enumJavaType.getJavaTypeClass(),
+						valueConverter,
+						typeConfiguration
+				),
+				typeConfiguration
+		);
 		return new InferredBasicValueResolution<>(
-				typeConfiguration.getBasicTypeRegistry().resolve(relationalJtd, jdbcType),
+				customType,
 				enumJavaType,
 				relationalJtd,
 				jdbcType,
-				valueConverter,
-				new CustomType<>(
-						new org.hibernate.type.EnumType<>(
-								enumJavaType.getJavaTypeClass(),
-								valueConverter,
-								typeConfiguration
-						),
-						typeConfiguration
-				),
+				null,//valueConverter,
+				customType,
 				ImmutableMutabilityPlan.instance()
 		);
 	}

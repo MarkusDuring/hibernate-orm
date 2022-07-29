@@ -28,8 +28,11 @@ import org.hibernate.metamodel.mapping.internal.ToOneAttributeMapping;
 import org.hibernate.metamodel.model.convert.internal.NamedEnumValueConverter;
 import org.hibernate.metamodel.model.convert.internal.OrdinalEnumValueConverter;
 import org.hibernate.metamodel.model.convert.spi.BasicValueConverter;
+import org.hibernate.metamodel.model.convert.spi.EnumValueConverter;
 import org.hibernate.metamodel.model.convert.spi.JpaAttributeConverter;
 import org.hibernate.persister.entity.EntityPersister;
+import org.hibernate.type.BasicType;
+import org.hibernate.type.descriptor.converter.AttributeConverterJdbcTypeAdapter;
 import org.hibernate.type.descriptor.jdbc.spi.JdbcTypeRegistry;
 
 import org.hibernate.testing.orm.junit.DomainModel;
@@ -89,13 +92,17 @@ public class SmokeTests {
 
 			assertThat( genderAttrMapping.getJavaType().getJavaTypeClass(), equalTo( Gender.class ) );
 
-			final BasicValueConverter valueConverter = genderAttrMapping.getValueConverter();
+			final BasicType<?> basicType = (BasicType<?>) genderAttrMapping.getJdbcMapping();
+			final EnumValueConverter<?, ?> valueConverter = (EnumValueConverter<?, ?>) basicType.getValueConverter();
 			assertThat( valueConverter, instanceOf( OrdinalEnumValueConverter.class ) );
-			assertThat( valueConverter.getDomainJavaType(), is( genderAttrMapping.getJavaType() ) );
+			assertThat(
+					valueConverter.getDomainJavaType().getJavaTypeClass(),
+					equalTo( genderAttrMapping.getJavaType().getJavaTypeClass() )
+			);
 			assertThat( valueConverter.getRelationalJavaType().getJavaTypeClass(), equalTo( Integer.class ) );
 
 			assertThat(
-					genderAttrMapping.getJdbcMapping().getJdbcType(),
+					jdbcTypeRegistry.getDescriptor( valueConverter.getJdbcTypeCode() ),
 					is( jdbcTypeRegistry.getDescriptor( Types.SMALLINT ) )
 			);
 		}
@@ -109,13 +116,17 @@ public class SmokeTests {
 
 			assertThat( attrMapping.getJavaType().getJavaTypeClass(), equalTo( Gender.class ) );
 
-			final BasicValueConverter valueConverter = attrMapping.getValueConverter();
+			final BasicType<?> basicType = (BasicType<?>) attrMapping.getJdbcMapping();
+			final EnumValueConverter<?, ?> valueConverter = (EnumValueConverter<?, ?>) basicType.getValueConverter();
 			assertThat( valueConverter, instanceOf( NamedEnumValueConverter.class ) );
-			assertThat( valueConverter.getDomainJavaType(), is( attrMapping.getJavaType() ) );
+			assertThat(
+					valueConverter.getDomainJavaType().getJavaTypeClass(),
+					equalTo( attrMapping.getJavaType().getJavaTypeClass() )
+			);
 			assertThat( valueConverter.getRelationalJavaType().getJavaTypeClass(), equalTo( String.class ) );
 
 			assertThat(
-					attrMapping.getJdbcMapping().getJdbcType(),
+					jdbcTypeRegistry.getDescriptor( valueConverter.getJdbcTypeCode() ),
 					is( jdbcTypeRegistry.getDescriptor( Types.VARCHAR ) )
 			);
 		}
@@ -129,13 +140,14 @@ public class SmokeTests {
 
 			assertThat( attrMapping.getJavaType().getJavaTypeClass(), equalTo( Gender.class ) );
 
-			final BasicValueConverter valueConverter = attrMapping.getValueConverter();
+			final BasicValueConverter valueConverter = ( (BasicType<?>) attrMapping.getJdbcMapping() ).getValueConverter();
 			assertThat( valueConverter, instanceOf( JpaAttributeConverter.class ) );
 			assertThat( valueConverter.getDomainJavaType(), is( attrMapping.getJavaType() ) );
 			assertThat( valueConverter.getRelationalJavaType().getJavaTypeClass(), equalTo( Character.class ) );
 
 			assertThat(
-					attrMapping.getJdbcMapping().getJdbcType(),
+					( (AttributeConverterJdbcTypeAdapter) attrMapping.getJdbcMapping()
+							.getJdbcType() ).getUnderlyingJdbcType(),
 					is( jdbcTypeRegistry.getDescriptor( Types.CHAR ) )
 			);
 		}
