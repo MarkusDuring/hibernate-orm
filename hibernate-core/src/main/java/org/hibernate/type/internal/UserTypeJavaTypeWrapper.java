@@ -132,7 +132,8 @@ public class UserTypeJavaTypeWrapper<J> implements BasicJavaType<J> {
 
 	@Override
 	public <X> X unwrap(J value, Class<X> type, WrapperOptions options) {
-		assert value == null || userType.returnedClass().isInstance( value );
+		// todo: be more lenient about supported types
+//		assert value == null || userType.returnedClass().isInstance( value );
 
 		final BasicValueConverter<J, Object> valueConverter = userType.getValueConverter();
 		if ( value != null && !type.isInstance( value ) && valueConverter != null ) {
@@ -145,6 +146,7 @@ public class UserTypeJavaTypeWrapper<J> implements BasicJavaType<J> {
 
 	@Override
 	public <X> J wrap(X value, WrapperOptions options) {
+		// todo: be more lenient about supported types
 //		assert value == null || userType.returnedClass().isInstance( value );
 
 		final BasicValueConverter<J, Object> valueConverter = userType.getValueConverter();

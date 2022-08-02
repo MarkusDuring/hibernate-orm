@@ -22,12 +22,14 @@ import org.hibernate.engine.spi.Mapping;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.internal.util.collections.ArrayHelper;
+import org.hibernate.metamodel.model.convert.spi.BasicValueConverter;
 import org.hibernate.query.sqm.CastType;
 import org.hibernate.type.descriptor.ValueBinder;
 import org.hibernate.type.descriptor.ValueExtractor;
 import org.hibernate.type.descriptor.WrapperOptions;
 import org.hibernate.type.descriptor.java.JavaType;
 import org.hibernate.type.descriptor.java.MutabilityPlan;
+import org.hibernate.type.descriptor.jdbc.JdbcLiteralFormatter;
 import org.hibernate.type.descriptor.jdbc.JdbcType;
 
 /**
@@ -44,6 +46,7 @@ public abstract class AbstractStandardBasicType<T>
 	private final int[] sqlTypes;
 	private final ValueBinder<T> jdbcValueBinder;
 	private final ValueExtractor<T> jdbcValueExtractor;
+	private final JdbcLiteralFormatter<T> jdbcLiteralFormatter;
 
 	public AbstractStandardBasicType(JdbcType jdbcType, JavaType<T> javaType) {
 		this.jdbcType = jdbcType;
@@ -52,6 +55,7 @@ public abstract class AbstractStandardBasicType<T>
 
 		this.jdbcValueBinder = jdbcType.getBinder( javaType );
 		this.jdbcValueExtractor = jdbcType.getExtractor( javaType );
+		this.jdbcLiteralFormatter = jdbcType.getJdbcLiteralFormatter( javaType );
 	}
 
 	@Override
@@ -62,6 +66,11 @@ public abstract class AbstractStandardBasicType<T>
 	@Override
 	public ValueBinder<T> getJdbcValueBinder() {
 		return jdbcValueBinder;
+	}
+
+	@Override
+	public JdbcLiteralFormatter getJdbcLiteralFormatter() {
+		return jdbcLiteralFormatter;
 	}
 
 	@Override
@@ -339,10 +348,18 @@ public abstract class AbstractStandardBasicType<T>
 				break;
 			case Types.CHAR:
 			case Types.NCHAR:
+				// todo: check if we can remove this
 				if ( getJavaType() == Boolean.class ) {
-					return (Boolean) getJavaTypeDescriptor().wrap( 'Y', null )
-							? CastType.YN_BOOLEAN
-							: CastType.TF_BOOLEAN;
+					final BasicValueConverter<T, ?> converter = getValueConverter();
+					if ( converter != null && converter.getRelationalJavaType().getJavaType() == Character.class ) {
+						if ( converter instanceof TrueFalseConverter ) {
+							return CastType.TF_BOOLEAN;
+						}
+						else if ( converter instanceof YesNoConverter ) {
+							return CastType.YN_BOOLEAN;
+						}
+					}
+					return CastType.YN_BOOLEAN;
 				}
 				break;
 			case Types.TIMESTAMP_WITH_TIMEZONE:

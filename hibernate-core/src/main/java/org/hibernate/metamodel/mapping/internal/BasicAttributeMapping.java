@@ -40,6 +40,7 @@ import org.hibernate.sql.results.graph.FetchParent;
 import org.hibernate.sql.results.graph.basic.BasicFetch;
 import org.hibernate.sql.results.graph.basic.BasicResult;
 import org.hibernate.tuple.ValueGeneration;
+import org.hibernate.type.BasicType;
 import org.hibernate.type.descriptor.java.JavaType;
 
 /**
@@ -260,8 +261,7 @@ public class BasicAttributeMapping
 		return new BasicResult(
 				sqlSelection.getValuesArrayPosition(),
 				resultVariable,
-				getMappedType().getMappedJavaType(),
-				valueConverter,
+				jdbcMapping,
 				navigablePath
 		);
 	}
@@ -291,7 +291,7 @@ public class BasicAttributeMapping
 								creationState.getSqlAstCreationState().getCreationContext().getSessionFactory()
 						)
 				),
-				valueConverter == null ? getMappedType().getMappedJavaType() : valueConverter.getRelationalJavaType(),
+				jdbcMapping.getJdbcJavaType(),
 				fetchParent,
 				creationState.getSqlAstCreationState().getCreationContext().getSessionFactory().getTypeConfiguration()
 		);
@@ -347,7 +347,6 @@ public class BasicAttributeMapping
 				fetchParent,
 				fetchablePath,
 				this,
-				valueConverter,
 				fetchTiming,
 				creationState
 		);
@@ -355,8 +354,9 @@ public class BasicAttributeMapping
 
 	@Override
 	public Object disassemble(Object value, SharedSessionContractImplementor session) {
-		if ( valueConverter != null ) {
-			return valueConverter.toRelationalValue( value );
+		if ( jdbcMapping.getValueConverter() != null ) {
+			//noinspection unchecked
+			return jdbcMapping.getValueConverter().toRelationalValue( value );
 		}
 		return value;
 	}

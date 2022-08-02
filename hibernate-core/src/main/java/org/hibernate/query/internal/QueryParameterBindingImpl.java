@@ -13,6 +13,7 @@ import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.metamodel.mapping.BasicValuedMapping;
 import org.hibernate.metamodel.mapping.JdbcMapping;
 import org.hibernate.metamodel.mapping.MappingModelExpressible;
+import org.hibernate.metamodel.mapping.ModelPart;
 import org.hibernate.query.BindableType;
 import org.hibernate.query.QueryParameter;
 import org.hibernate.query.spi.QueryParameterBinding;
@@ -321,7 +322,8 @@ public class QueryParameterBindingImpl<T> implements QueryParameterBinding<T>, J
 	@Override @SuppressWarnings("unchecked")
 	public boolean setType(MappingModelExpressible<T> type) {
 		this.type = type;
-		if ( bindType == null || bindType.getBindableJavaType() == Object.class ) {
+		// If the bind type is undetermined or the given type is a model part, then we try to apply a new bind type
+		if ( bindType == null || bindType.getBindableJavaType() == Object.class || type instanceof ModelPart ) {
 			if ( type instanceof BindableType<?> ) {
 				final boolean changed = bindType != null && type != bindType;
 				this.bindType = (BindableType<T>) type;

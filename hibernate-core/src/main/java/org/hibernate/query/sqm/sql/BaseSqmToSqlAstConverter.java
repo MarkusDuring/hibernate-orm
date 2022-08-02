@@ -55,6 +55,7 @@ import org.hibernate.internal.util.collections.StandardStack;
 import org.hibernate.loader.MultipleBagFetchException;
 import org.hibernate.metamodel.CollectionClassification;
 import org.hibernate.metamodel.MappingMetamodel;
+import org.hibernate.metamodel.RepresentationMode;
 import org.hibernate.metamodel.mapping.Association;
 import org.hibernate.metamodel.mapping.AttributeMapping;
 import org.hibernate.metamodel.mapping.BasicEntityIdentifierMapping;
@@ -99,6 +100,7 @@ import org.hibernate.metamodel.model.domain.ManagedDomainType;
 import org.hibernate.metamodel.model.domain.PluralPersistentAttribute;
 import org.hibernate.metamodel.model.domain.SingularPersistentAttribute;
 import org.hibernate.metamodel.model.domain.internal.AnyDiscriminatorSqmPath;
+import org.hibernate.persister.entity.DiscriminatorType;
 import org.hibernate.query.derived.AnonymousTupleTableGroupProducer;
 import org.hibernate.query.derived.AnonymousTupleType;
 import org.hibernate.metamodel.model.domain.internal.BasicSqmPathSource;
@@ -379,9 +381,10 @@ import org.hibernate.sql.results.graph.instantiation.internal.DynamicInstantiati
 import org.hibernate.sql.results.internal.SqlSelectionImpl;
 import org.hibernate.sql.results.internal.StandardEntityGraphTraversalStateImpl;
 import org.hibernate.type.BasicType;
+import org.hibernate.type.CustomType;
+import org.hibernate.type.EnumType;
 import org.hibernate.type.JavaObjectType;
 import org.hibernate.type.SqlTypes;
-import org.hibernate.type.descriptor.java.BasicJavaType;
 import org.hibernate.type.descriptor.java.EnumJavaType;
 import org.hibernate.type.descriptor.java.JavaType;
 import org.hibernate.type.descriptor.java.TemporalJavaType;
@@ -4677,20 +4680,10 @@ public abstract class BaseSqmToSqlAstConverter<T extends Statement> extends Base
 			return new SqlTuple( expressions, mappingModelExpressible);
 		}
 
-		final MappingModelExpressible<?> inferableExpressible = resolveInferredType();
+		final MappingModelExpressible<?> inferableExpressible = getInferredValueMapping();
 
-		if ( inferableExpressible instanceof ConvertibleModelPart ) {
-			final ConvertibleModelPart convertibleModelPart = (ConvertibleModelPart) inferableExpressible;
-
-			if ( convertibleModelPart.getValueConverter() != null ) {
-				return new QueryLiteral<>(
-						literal.getLiteralValue(),
-						convertibleModelPart
-				);
-			}
-		}
 		// Special case for when we create an entity literal through the JPA CriteriaBuilder.literal API
-		else if ( inferableExpressible instanceof EntityDiscriminatorMapping ) {
+		if ( inferableExpressible instanceof EntityDiscriminatorMapping ) {
 			final EntityDiscriminatorMapping discriminatorMapping = (EntityDiscriminatorMapping) inferableExpressible;
 			final Object literalValue = literal.getLiteralValue();
 			final EntityPersister mappingDescriptor;
@@ -4701,19 +4694,20 @@ public abstract class BaseSqmToSqlAstConverter<T extends Statement> extends Base
 						.getEntityDescriptor( (Class<?>) literalValue );
 			}
 			else {
-				final JavaType<?> javaType = discriminatorMapping.getJdbcMapping().getJavaTypeDescriptor();
+				final DiscriminatorType<?> discriminatorType = (DiscriminatorType<?>) discriminatorMapping.getJdbcMapping();
+				final JavaType<?> relationalJavaType = discriminatorType.getRelationalJavaType();
 				final Object discriminatorValue;
-				if ( javaType.getJavaTypeClass().isInstance( literalValue ) ) {
+				if ( relationalJavaType.isInstance( literalValue ) ) {
 					discriminatorValue = literalValue;
 				}
 				else if ( literalValue instanceof CharSequence ) {
-					discriminatorValue = javaType.fromString( (CharSequence) literalValue );
+					discriminatorValue = relationalJavaType.fromString( (CharSequence) literalValue );
 				}
 				else if ( creationContext.getSessionFactory().getJpaMetamodel().getJpaCompliance().isLoadByIdComplianceEnabled() ) {
 					discriminatorValue = literalValue;
 				}
 				else {
-					discriminatorValue = javaType.coerce( literalValue, null );
+					discriminatorValue = relationalJavaType.coerce( literalValue, null );
 				}
 				final String entityName = discriminatorMapping.getConcreteEntityNameForDiscriminatorValue(
 						discriminatorValue
@@ -4724,6 +4718,36 @@ public abstract class BaseSqmToSqlAstConverter<T extends Statement> extends Base
 						.getEntityDescriptor( entityName );
 			}
 			return new EntityTypeLiteral( mappingDescriptor );
+		}
+		else if ( inferableExpressible instanceof BasicValuedMapping ) {
+			final BasicValuedMapping basicValuedMapping = (BasicValuedMapping) inferableExpressible;
+			final BasicValueConverter valueConverter = basicValuedMapping.getJdbcMapping().getValueConverter();
+			if ( valueConverter != null ) {
+				final Object value = literal.getLiteralValue();
+				final Object sqlLiteralValue;
+				// For converted query literals, we support both, the domain and relational java type
+				if ( value == null || valueConverter.getDomainJavaType().getJavaTypeClass().isInstance( value ) ) {
+					sqlLiteralValue = valueConverter.toRelationalValue( value );
+				}
+				else if ( valueConverter.getRelationalJavaType().getJavaTypeClass().isInstance( value ) ) {
+					sqlLiteralValue = value;
+				}
+				else {
+					throw new SqlTreeCreationException(
+							String.format(
+									Locale.ROOT,
+									"QueryLiteral type [`%s`] did not match domain Java-type [`%s`] nor JDBC Java-type [`%s`]",
+									value.getClass(),
+									valueConverter.getDomainJavaType().getJavaTypeClass().getName(),
+									valueConverter.getRelationalJavaType().getJavaTypeClass().getName()
+							)
+					);
+				}
+				return new QueryLiteral<>(
+						sqlLiteralValue,
+						basicValuedMapping
+				);
+			}
 		}
 
 
@@ -6296,26 +6320,43 @@ public abstract class BaseSqmToSqlAstConverter<T extends Statement> extends Base
 	@Override
 	public Object visitEnumLiteral(SqmEnumLiteral<?> sqmEnumLiteral) {
 		final BasicValuedMapping inferrableType = (BasicValuedMapping) resolveInferredType();
-		if ( inferrableType instanceof ConvertibleModelPart ) {
-			final ConvertibleModelPart inferredPart = (ConvertibleModelPart) inferrableType;
-			final BasicValueConverter<Enum<?>,?> valueConverter = inferredPart.getValueConverter();
-			final Object jdbcValue = valueConverter.toRelationalValue( sqmEnumLiteral.getEnumValue() );
-			return new QueryLiteral<>( jdbcValue, inferredPart );
+		if ( inferrableType != null ) {
+			final BasicValueConverter<Enum<?>,?> valueConverter = (BasicValueConverter<Enum<?>, ?>) inferrableType.getJdbcMapping().getValueConverter();
+			final Object jdbcValue;
+			if ( valueConverter == null ) {
+				jdbcValue = sqmEnumLiteral.getEnumValue();
+			}
+			else {
+				jdbcValue = valueConverter.toRelationalValue( sqmEnumLiteral.getEnumValue() );
+			}
+			return new QueryLiteral<>( jdbcValue, inferrableType );
 		}
 
+		// This can only happen when selecting an enum literal, in which case we default to ordinal encoding
 		final EnumJavaType<?> enumJtd = sqmEnumLiteral.getExpressibleJavaType();
-		final JdbcType jdbcType = getTypeConfiguration().getJdbcTypeRegistry()
-				.getDescriptor( SqlTypes.SMALLINT );
-		final BasicJavaType<Number> relationalJtd = (BasicJavaType) getTypeConfiguration()
-				.getJavaTypeRegistry()
-				.getDescriptor( Integer.class );
-		final BasicType<?> jdbcMappingType = getTypeConfiguration().getBasicTypeRegistry().resolve( relationalJtd, jdbcType );
+		final TypeConfiguration typeConfiguration = getTypeConfiguration();
+		final JdbcType jdbcType = typeConfiguration.getJdbcTypeRegistry().getDescriptor( SqlTypes.SMALLINT );
+		final JavaType<Number> relationalJtd = typeConfiguration.getJavaTypeRegistry().getDescriptor( Integer.class );
+		final BasicType<?> jdbcMappingType = typeConfiguration.getBasicTypeRegistry().resolve( relationalJtd, jdbcType );
 
-		return new ConvertedQueryLiteral(
-				sqmEnumLiteral.getEnumValue(),
-				new OrdinalEnumValueConverter<>( enumJtd, jdbcType, relationalJtd ),
-				jdbcMappingType
+		return new QueryLiteral(
+				sqmEnumLiteral.getEnumValue().ordinal(),
+				new CustomType(
+						new EnumType<>(
+								enumJtd.getJavaTypeClass(),
+								new OrdinalEnumValueConverter<>( enumJtd, jdbcType, relationalJtd ),
+								typeConfiguration
+						),
+						typeConfiguration
+				)
+//				new OrdinalEnumValueConverter<>( enumJtd, jdbcType, relationalJtd ),
+//				jdbcMappingType
 		);
+//		return new ConvertedQueryLiteral(
+//				sqmEnumLiteral.getEnumValue(),
+//				new OrdinalEnumValueConverter<>( enumJtd, jdbcType, relationalJtd ),
+//				jdbcMappingType
+//		);
 	}
 
 	@Override

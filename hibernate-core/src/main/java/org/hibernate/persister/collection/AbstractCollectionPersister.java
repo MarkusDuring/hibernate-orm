@@ -258,12 +258,12 @@ public abstract class AbstractCollectionPersister
 
 	private final CollectionSemantics<?,?> collectionSemantics;
 
-	private final BasicValueConverter elementConverter;
-	private final BasicValueConverter indexConverter;
-
-	// temporary
-	private final JdbcMapping convertedElementType;
-	private final JdbcMapping convertedIndexType;
+//	private final BasicValueConverter elementConverter;
+//	private final BasicValueConverter indexConverter;
+//
+//	// temporary
+//	private final JdbcMapping convertedElementType;
+//	private final JdbcMapping convertedIndexType;
 
 	@Deprecated(since = "6.0")
 	public AbstractCollectionPersister(
@@ -677,25 +677,25 @@ public abstract class AbstractCollectionPersister
 				.getPersistentCollectionRepresentationResolver()
 				.resolveRepresentation( collectionBootDescriptor );
 
-		if ( elementBootDescriptor instanceof BasicValue ) {
-			final BasicValue.Resolution<?> basicTypeResolution = ( (BasicValue) elementBootDescriptor ).resolve();
-			this.elementConverter = basicTypeResolution.getValueConverter();
-			this.convertedElementType = basicTypeResolution.getJdbcMapping();
-		}
-		else {
-			this.elementConverter = null;
-			this.convertedElementType = null;
-		}
-
-		if ( indexBootDescriptor instanceof BasicValue ) {
-			final BasicValue.Resolution<?> basicTypeResolution = ( (BasicValue) indexBootDescriptor ).resolve();
-			this.indexConverter = basicTypeResolution.getValueConverter();
-			this.convertedIndexType = basicTypeResolution.getJdbcMapping();
-		}
-		else {
-			this.indexConverter = null;
-			this.convertedIndexType = null;
-		}
+//		if ( elementBootDescriptor instanceof BasicValue ) {
+//			final BasicValue.Resolution<?> basicTypeResolution = ( (BasicValue) elementBootDescriptor ).resolve();
+//			this.elementConverter = basicTypeResolution.getValueConverter();
+//			this.convertedElementType = basicTypeResolution.getJdbcMapping();
+//		}
+//		else {
+//			this.elementConverter = null;
+//			this.convertedElementType = null;
+//		}
+//
+//		if ( indexBootDescriptor instanceof BasicValue ) {
+//			final BasicValue.Resolution<?> basicTypeResolution = ( (BasicValue) indexBootDescriptor ).resolve();
+//			this.indexConverter = basicTypeResolution.getValueConverter();
+//			this.convertedIndexType = basicTypeResolution.getJdbcMapping();
+//		}
+//		else {
+//			this.indexConverter = null;
+//			this.convertedIndexType = null;
+//		}
 		if ( queryLoaderName != null ) {
 			// We must resolve the named query on-demand through the boot model because it isn't initialized yet
 			final NamedQueryMemento namedQueryMemento = factory.getQueryEngine().getNamedObjectRepository()
@@ -992,12 +992,12 @@ public abstract class AbstractCollectionPersister
 
 	@Override
 	public BasicValueConverter<?,?> getElementConverter() {
-		return elementConverter;
+		return elementType instanceof JdbcMapping ? ( (JdbcMapping) elementType ).getValueConverter() : null;
 	}
 
 	@Override
 	public BasicValueConverter<?,?> getIndexConverter() {
-		return indexConverter;
+		return indexType instanceof JdbcMapping ? ( (JdbcMapping) indexType ).getValueConverter() : null;
 	}
 
 	/**
@@ -1052,15 +1052,15 @@ public abstract class AbstractCollectionPersister
 	 */
 	protected int writeIndex(PreparedStatement st, Object index, int i, SharedSessionContractImplementor session)
 			throws HibernateException, SQLException {
-		if ( indexConverter != null ) {
-			//noinspection unchecked
-			final Object converted = indexConverter.toRelationalValue( index );
-			//noinspection unchecked
-			convertedIndexType.getJdbcValueBinder().bind( st, converted, i, session );
-		}
-		else {
+//		if ( indexConverter != null ) {
+//			//noinspection unchecked
+//			final Object converted = indexConverter.toRelationalValue( index );
+//			//noinspection unchecked
+//			convertedIndexType.getJdbcValueBinder().bind( st, converted, i, session );
+//		}
+//		else {
 			getIndexType().nullSafeSet( st, incrementIndexByBase( index ), i, indexColumnIsSettable, session );
-		}
+//		}
 
 		return i + ArrayHelper.countTrue( indexColumnIsSettable );
 	}
@@ -1080,13 +1080,13 @@ public abstract class AbstractCollectionPersister
 		if ( elementIsPureFormula ) {
 			throw new AssertionFailure( "cannot use a formula-based element in the where condition" );
 		}
-		if ( elementConverter != null ) {
-			final Object converted = elementConverter.toRelationalValue( elt );
-			convertedElementType.getJdbcValueBinder().bind( st, converted, i, session );
-		}
-		else {
+//		if ( elementConverter != null ) {
+//			final Object converted = elementConverter.toRelationalValue( elt );
+//			convertedElementType.getJdbcValueBinder().bind( st, converted, i, session );
+//		}
+//		else {
 			getElementType().nullSafeSet( st, elt, i, elementColumnIsInPrimaryKey, session );
-		}
+//		}
 		return i + elementColumnAliases.length;
 	}
 
@@ -1098,13 +1098,13 @@ public abstract class AbstractCollectionPersister
 		if ( indexContainsFormula ) {
 			throw new AssertionFailure( "cannot use a formula-based index in the where condition" );
 		}
-		if ( indexConverter != null ) {
-			final Object converted = indexConverter.toRelationalValue( index );
-			convertedIndexType.getJdbcValueBinder().bind( st, converted, i, session );
-		}
-		else {
+//		if ( indexConverter != null ) {
+//			final Object converted = indexConverter.toRelationalValue( index );
+//			convertedIndexType.getJdbcValueBinder().bind( st, converted, i, session );
+//		}
+//		else {
 			getIndexType().nullSafeSet( st, incrementIndexByBase( index ), i, session );
-		}
+//		}
 		return i + indexColumnAliases.length;
 	}
 

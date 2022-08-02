@@ -37,44 +37,36 @@ public class QueryLiteral<T> implements Literal, DomainResultProducer<T> {
 	private final BasicValuedMapping type;
 
 	public QueryLiteral(T value, BasicValuedMapping type) {
-		if ( type instanceof ConvertibleModelPart ) {
-			final ConvertibleModelPart convertibleModelPart = (ConvertibleModelPart) type;
-			final BasicValueConverter valueConverter = convertibleModelPart.getValueConverter();
-
-			if ( valueConverter != null ) {
-				final Object literalValue = value;
-				final Object sqlLiteralValue;
-
-				if ( literalValue == null || valueConverter.getDomainJavaType().getJavaTypeClass().isInstance(
-						literalValue ) ) {
-					sqlLiteralValue = valueConverter.toRelationalValue( literalValue );
-				}
-				else if ( valueConverter.getRelationalJavaType().getJavaTypeClass().isInstance( literalValue ) ) {
-					sqlLiteralValue = literalValue;
-				}
-				else {
-					throw new SqlTreeCreationException(
-							String.format(
-									Locale.ROOT,
-									"QueryLiteral type [`%s`] did not match domain Java-type [`%s`] nor JDBC Java-type [`%s`]",
-									literalValue.getClass(),
-									valueConverter.getDomainJavaType().getJavaTypeClass().getName(),
-									valueConverter.getRelationalJavaType().getJavaTypeClass().getName()
-							)
-					);
-				}
-				this.value = (T) sqlLiteralValue;
-				this.type = convertibleModelPart;
-			}
-			else {
-				this.value = value;
-				this.type = type;
-			}
-		}
-		else {
+		assert value == null || type.getJdbcMapping().getJdbcJavaType().isInstance( value );
+//		final BasicValueConverter valueConverter = type.getJdbcMapping().getValueConverter();
+//		if ( valueConverter != null ) {
+//			final Object sqlLiteralValue;
+//
+//			// For converted query literals, we support both, the domain and relational java type
+//			if ( value == null || valueConverter.getDomainJavaType().getJavaTypeClass().isInstance( value ) ) {
+//				sqlLiteralValue = valueConverter.toRelationalValue( value );
+//			}
+//			else if ( valueConverter.getRelationalJavaType().getJavaTypeClass().isInstance( value ) ) {
+//				sqlLiteralValue = value;
+//			}
+//			else {
+//				throw new SqlTreeCreationException(
+//						String.format(
+//								Locale.ROOT,
+//								"QueryLiteral type [`%s`] did not match domain Java-type [`%s`] nor JDBC Java-type [`%s`]",
+//								value.getClass(),
+//								valueConverter.getDomainJavaType().getJavaTypeClass().getName(),
+//								valueConverter.getRelationalJavaType().getJavaTypeClass().getName()
+//						)
+//				);
+//			}
+//			this.value = (T) sqlLiteralValue;
+//			this.type = type;
+//		}
+//		else {
 			this.value = value;
 			this.type = type;
-		}
+//		}
 	}
 
 	@Override
@@ -105,7 +97,7 @@ public class QueryLiteral<T> implements Literal, DomainResultProducer<T> {
 				.getSqlExpressionResolver();
 		final SqlSelection sqlSelection = sqlExpressionResolver.resolveSqlSelection(
 				this,
-				type.getMappedType().getMappedJavaType(),
+				type.getJdbcMapping().getJdbcJavaType(),
 				null,
 				creationState.getSqlAstCreationState()
 						.getCreationContext()
@@ -113,10 +105,10 @@ public class QueryLiteral<T> implements Literal, DomainResultProducer<T> {
 						.getTypeConfiguration()
 		);
 
-		return new BasicResult(
+		return new BasicResult<>(
 				sqlSelection.getValuesArrayPosition(),
 				resultVariable,
-				type.getMappedType().getMappedJavaType()
+				type.getJdbcMapping()
 		);
 	}
 
@@ -128,13 +120,13 @@ public class QueryLiteral<T> implements Literal, DomainResultProducer<T> {
 			ExecutionContext executionContext) throws SQLException {
 		Object literalValue = getLiteralValue();
 		// Convert the literal value if needed to the JDBC type on demand to still serve the domain model type through getLiteralValue()
-		if ( type instanceof ConvertibleModelPart ) {
-			ConvertibleModelPart convertibleModelPart = (ConvertibleModelPart) type;
-			if ( convertibleModelPart.getValueConverter() != null ) {
-				//noinspection unchecked
-				literalValue = convertibleModelPart.getValueConverter().toRelationalValue( literalValue );
-			}
-		}
+//		if ( type instanceof ConvertibleModelPart ) {
+//			ConvertibleModelPart convertibleModelPart = (ConvertibleModelPart) type;
+//			if ( convertibleModelPart.getValueConverter() != null ) {
+//				//noinspection unchecked
+//				literalValue = convertibleModelPart.getValueConverter().toRelationalValue( literalValue );
+//			}
+//		}
 		//noinspection unchecked
 		type.getJdbcMapping().getJdbcValueBinder().bind(
 				statement,
@@ -148,7 +140,7 @@ public class QueryLiteral<T> implements Literal, DomainResultProducer<T> {
 	public void applySqlSelections(DomainResultCreationState creationState) {
 		creationState.getSqlAstCreationState().getSqlExpressionResolver().resolveSqlSelection(
 				this,
-				type.getJdbcMapping().getJavaTypeDescriptor(),
+				type.getJdbcMapping().getJdbcJavaType(),
 				null,
 				creationState.getSqlAstCreationState().getCreationContext().getMappingMetamodel().getTypeConfiguration()
 		);

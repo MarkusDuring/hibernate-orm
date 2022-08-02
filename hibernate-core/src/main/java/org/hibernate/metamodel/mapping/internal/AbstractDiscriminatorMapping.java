@@ -62,7 +62,7 @@ public abstract class AbstractDiscriminatorMapping implements EntityDiscriminato
 			EntityPersister entityDescriptor,
 			DiscriminatorType<?> discriminatorType,
 			MappingModelCreationProcess creationProcess) {
-		this.jdbcMapping = jdbcMapping;
+		this.jdbcMapping = discriminatorType;//jdbcMapping;
 
 		this.entityDescriptor = entityDescriptor;
 		this.discriminatorType = discriminatorType;
@@ -138,12 +138,10 @@ public abstract class AbstractDiscriminatorMapping implements EntityDiscriminato
 				creationState.getSqlAstCreationState()
 		);
 
-		//noinspection unchecked
-		return new BasicResult(
+		return new BasicResult<>(
 				sqlSelection.getValuesArrayPosition(),
 				resultVariable,
-				domainResultConverter.getDomainJavaType(),
-				domainResultConverter,
+				discriminatorType,
 				navigablePath
 		);
 	}
@@ -157,7 +155,7 @@ public abstract class AbstractDiscriminatorMapping implements EntityDiscriminato
 		final SqlExpressionResolver expressionResolver = creationState.getSqlExpressionResolver();
 		return expressionResolver.resolveSqlSelection(
 				resolveSqlExpression( navigablePath, jdbcMappingToUse, tableGroup, creationState ),
-				jdbcMappingToUse.getJavaTypeDescriptor(),
+				jdbcMappingToUse.getJdbcJavaType(),
 				fetchParent,
 				creationState.getCreationContext().getSessionFactory().getTypeConfiguration()
 		);
@@ -191,7 +189,6 @@ public abstract class AbstractDiscriminatorMapping implements EntityDiscriminato
 				fetchParent,
 				fetchablePath,
 				this,
-				null,
 				fetchTiming,
 				creationState
 		);
@@ -240,9 +237,9 @@ public abstract class AbstractDiscriminatorMapping implements EntityDiscriminato
 	}
 
 	private Object convertToRelational(Object domainValue) {
-		if ( domainResultConverter != null ) {
-			return domainResultConverter.toRelationalValue( domainValue );
-		}
+//		if ( domainResultConverter != null ) {
+//			return domainResultConverter.toRelationalValue( domainValue );
+//		}
 		return domainValue;
 	}
 

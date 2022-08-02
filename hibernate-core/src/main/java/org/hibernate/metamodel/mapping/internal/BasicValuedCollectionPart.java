@@ -153,12 +153,10 @@ public class BasicValuedCollectionPart
 			DomainResultCreationState creationState) {
 		final SqlSelection sqlSelection = resolveSqlSelection( navigablePath, tableGroup, true, null, creationState );
 
-		//noinspection unchecked
-		return new BasicResult(
+		return new BasicResult<>(
 				sqlSelection.getValuesArrayPosition(),
 				resultVariable,
-				getJavaType(),
-				valueConverter,
+				selectableMapping.getJdbcMapping(),
 				navigablePath
 		);
 	}
@@ -197,7 +195,7 @@ public class BasicValuedCollectionPart
 								creationState.getSqlAstCreationState().getCreationContext().getSessionFactory()
 						)
 				),
-				getJavaType(),
+				getJdbcMapping().getJdbcJavaType(),
 				fetchParent,
 				creationState.getSqlAstCreationState().getCreationContext().getSessionFactory().getTypeConfiguration()
 		);
@@ -272,7 +270,6 @@ public class BasicValuedCollectionPart
 				fetchParent,
 				fetchablePath,
 				this,
-				valueConverter,
 				FetchTiming.IMMEDIATE,
 				creationState
 		);
@@ -323,8 +320,8 @@ public class BasicValuedCollectionPart
 
 	@Override
 	public Object disassemble(Object value, SharedSessionContractImplementor session) {
-		if ( valueConverter != null ) {
-			return valueConverter.toRelationalValue( value );
+		if ( selectableMapping.getJdbcMapping().getValueConverter() != null ) {
+			return selectableMapping.getJdbcMapping().getValueConverter().toRelationalValue( value );
 		}
 		return value;
 	}
