@@ -12,6 +12,7 @@ import org.hibernate.test.bytecode.enhancement.lazy.cache.LazyInCacheTestTask;
 import org.hibernate.test.bytecode.enhancement.lazy.group.LazyGroupUpdateTestTask;
 import org.hibernate.test.bytecode.enhancement.lazy.group.SimpleLazyGroupUpdateTestTask;
 import org.hibernate.test.bytecode.enhancement.association.InheritedAttributeAssociationTestTask;
+import org.hibernate.test.bytecode.enhancement.lazytoone.OneToOneLazyLoadingTestTask;
 import org.hibernate.test.bytecode.enhancement.otherentityentrycontext.OtherEntityEntryContextTestTask;
 import org.hibernate.test.bytecode.enhancement.cascade.CascadeWithFkConstraintTestTask;
 import org.hibernate.test.bytecode.enhancement.merge.MergeEnhancedEntityTestTask;
@@ -85,6 +86,11 @@ public class EnhancerTest extends BaseUnitTestCase {
 	@Test
 	public void testDirty() {
 		EnhancerTestUtils.runEnhancerTestTask( DirtyTrackingTestTask.class );
+	}
+
+	@Test
+	public void testLazyToOne() {
+		EnhancerTestUtils.runEnhancerTestTask( OneToOneLazyLoadingTestTask.class );
 	}
 
 	@Test

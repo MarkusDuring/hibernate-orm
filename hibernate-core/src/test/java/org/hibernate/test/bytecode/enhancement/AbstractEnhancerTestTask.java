@@ -6,6 +6,9 @@
  */
 package org.hibernate.test.bytecode.enhancement;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import org.hibernate.SessionFactory;
 import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
 import org.hibernate.boot.registry.classloading.internal.ClassLoaderServiceImpl;
@@ -33,12 +36,19 @@ public abstract class AbstractEnhancerTestTask implements EnhancerTestTask {
 			config.addAnnotatedClass( resource );
 		}
 
+		final Map settings = new HashMap();
+		addSettings( settings );
+
 		StandardServiceRegistryBuilder serviceBuilder = new StandardServiceRegistryBuilder( );
 		serviceBuilder.addService( ClassLoaderService.class, new ClassLoaderServiceImpl( Thread.currentThread().getContextClassLoader() ) );
 
 		serviceBuilder.applySettings( config.getProperties() );
+		serviceBuilder.applySettings( settings );
 		serviceRegistry = serviceBuilder.build();
 		factory = config.buildSessionFactory( serviceRegistry );
+	}
+
+	protected void addSettings(Map settings) {
 	}
 
 	public final void complete() {
