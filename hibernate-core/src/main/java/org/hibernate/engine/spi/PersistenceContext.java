@@ -20,6 +20,8 @@ import org.hibernate.collection.spi.PersistentCollection;
 import org.hibernate.internal.util.MarkerObject;
 import org.hibernate.persister.collection.CollectionPersister;
 import org.hibernate.persister.entity.EntityPersister;
+import org.hibernate.sql.results.graph.entity.EntityInitializer;
+import org.hibernate.sql.results.jdbc.spi.JdbcValuesSourceProcessingState;
 import org.hibernate.sql.results.spi.LoadContexts;
 
 /**
@@ -489,11 +491,27 @@ public interface PersistenceContext {
 //	@Deprecated
 //	HashSet getNullifiableEntityKeys();
 
+	/**
+	 * Add a canonical mapping from entity key to entity instance
+	 *
+	 * @param key The key under which to add an entity
+	 * @param entity The entity instance to add
+	 * @param processingState The processing state which initializes the entity
+	 * @param initializer The initializer for the entity instance
+	 */
+	EntityHolder getEntityHolderOrCreateInitializing(
+			EntityKey key,
+			Object entity,
+			JdbcValuesSourceProcessingState processingState,
+			EntityInitializer initializer);
+
 	EntityHolder getEntityHolder(EntityKey key);
 
 	boolean containsEntityHolder(EntityKey key);
 
 	EntityHolder removeEntityHolder(EntityKey key);
+
+	void postLoad(JdbcValuesSourceProcessingState processingState);
 
 	/**
 	 * Doubly internal

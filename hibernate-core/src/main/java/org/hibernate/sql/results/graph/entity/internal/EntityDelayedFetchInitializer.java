@@ -102,17 +102,17 @@ public class EntityDelayedFetchInitializer extends AbstractFetchParentAccess imp
 				final EntityKey entityKey = new EntityKey( identifier, concreteDescriptor );
 				final PersistenceContext persistenceContext = session.getPersistenceContext();
 
-				final LoadingEntityEntry loadingEntityLocally = persistenceContext.getLoadContexts()
-						.findLoadingEntityEntry( entityKey );
-				if ( loadingEntityLocally != null ) {
-					entityInstance = loadingEntityLocally.getEntityInstance();
+//				final LoadingEntityEntry loadingEntityLocally = persistenceContext.getLoadContexts()
+//						.findLoadingEntityEntry( entityKey );
+//				if ( loadingEntityLocally != null ) {
+//					entityInstance = loadingEntityLocally.getEntityInstance();
+//				}
+//				if ( entityInstance == null ) {
+				final EntityHolder holder = persistenceContext.getEntityHolder( entityKey );
+				if ( holder != null && holder.getEntity() != null ) {
+					entityInstance = persistenceContext.proxyFor( holder );
 				}
-				if ( entityInstance == null ) {
-					final EntityHolder holder = persistenceContext.getEntityHolder( entityKey );
-					if ( holder != null && holder.getEntity() != null ) {
-						entityInstance = persistenceContext.proxyFor( holder );
-					}
-				}
+//				}
 			}
 			if ( entityInstance == null ) {
 				if ( referencedModelPart.isOptional()

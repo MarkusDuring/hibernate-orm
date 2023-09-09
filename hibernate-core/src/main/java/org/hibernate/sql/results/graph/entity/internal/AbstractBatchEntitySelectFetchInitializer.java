@@ -9,6 +9,7 @@ package org.hibernate.sql.results.graph.entity.internal;
 import java.util.function.Consumer;
 
 import org.hibernate.bytecode.enhance.spi.interceptor.EnhancementAsProxyLazinessInterceptor;
+import org.hibernate.engine.spi.EntityHolder;
 import org.hibernate.engine.spi.EntityKey;
 import org.hibernate.engine.spi.PersistenceContext;
 import org.hibernate.engine.spi.PersistentAttributeInterceptable;
@@ -105,25 +106,28 @@ public abstract class AbstractBatchEntitySelectFetchInitializer extends Abstract
 		assert entityKey != null;
 		final SharedSessionContractImplementor session = rowProcessingState.getSession();
 		final PersistenceContext persistenceContext = session.getPersistenceContext();
-		final Object instance = persistenceContext.getEntity( entityKey );
-		if ( instance == null ) {
-			final LoadingEntityEntry loadingEntityEntry = persistenceContext
-					.getLoadContexts().findLoadingEntityEntry( entityKey );
-			if ( loadingEntityEntry != null ) {
-				return loadingEntityEntry.getEntityInstance();
-			}
+		final EntityHolder holder = persistenceContext.getEntityHolder( entityKey );
+		if ( holder != null && holder.getEntity() != null && holder.isEventuallyInitialized() ) {
+			return holder.getEntity();
 		}
-		else if ( isInitialized( instance ) ) {
-			return instance;
-		}
-		else {
-			// the instance is not initialized but there is another initialzier that is loading it
-			final LoadingEntityEntry loadingEntityEntry = persistenceContext
-					.getLoadContexts().findLoadingEntityEntry( entityKey );
-			if ( loadingEntityEntry != null ) {
-				return loadingEntityEntry.getEntityInstance();
-			}
-		}
+//		if ( instance == null ) {
+//			final LoadingEntityEntry loadingEntityEntry = persistenceContext
+//					.getLoadContexts().findLoadingEntityEntry( entityKey );
+//			if ( loadingEntityEntry != null ) {
+//				return loadingEntityEntry.getEntityInstance();
+//			}
+//		}
+//		else if ( isInitialized( instance ) ) {
+//			return instance;
+//		}
+//		else {
+//			// the instance is not initialized but there is another initialzier that is loading it
+//			final LoadingEntityEntry loadingEntityEntry = persistenceContext
+//					.getLoadContexts().findLoadingEntityEntry( entityKey );
+//			if ( loadingEntityEntry != null ) {
+//				return loadingEntityEntry.getEntityInstance();
+//			}
+//		}
 		// we need to register a resolution listener only if there is not an already initialized instance
 		// or an instance that another initialzier is loading
 		registerResolutionListener();

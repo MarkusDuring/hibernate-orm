@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.hibernate.engine.spi.CollectionKey;
+import org.hibernate.engine.spi.EntityHolder;
 import org.hibernate.engine.spi.EntityKey;
 import org.hibernate.engine.spi.EntityUniqueKey;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
@@ -128,7 +129,16 @@ public class JdbcValuesSourceProcessingStateStandardImpl implements JdbcValuesSo
 
 	@Override
 	public LoadingEntityEntry findLoadingEntityLocally(EntityKey entityKey) {
-		return loadingEntityMap == null ? null : loadingEntityMap.get( entityKey );
+		final EntityHolder holder = executionContext.getSession()
+				.getPersistenceContextInternal()
+				.getEntityHolder( entityKey );
+		return holder == null || holder.getEntityInitializer() == null ? null : new LoadingEntityEntry(
+				holder.getEntityInitializer(),
+				holder.getEntityKey(),
+				holder.getDescriptor(),
+				holder.getEntity()
+		);
+//		return loadingEntityMap == null ? null : loadingEntityMap.get( entityKey );
 	}
 
 	@Override
@@ -181,57 +191,58 @@ public class JdbcValuesSourceProcessingStateStandardImpl implements JdbcValuesSo
 		// now we can finalize loading collections
 		finishLoadingCollections();
 
-		postLoad();
+		executionContext.getSession().getPersistenceContextInternal().postLoad( this );
+//		postLoad();
 	}
 
 	private void postLoad() {
-		final Callback callback = executionContext.getCallback();
-		if ( loadingEntityMap != null ) {
-			final EventListenerGroup<PostLoadEventListener> listenerGroup = executionContext.getSession().getFactory()
-					.getFastSessionServices()
-					.eventListenerGroup_POST_LOAD;
-
-			loadingEntityMap.forEach(
-					(entityKey, loadingEntityEntry) -> {
-						if ( loadingEntityEntry.getEntityInstance() != null ) {
-							if ( postLoadEvent != null ) {
-								postLoadEvent.reset();
-								postLoadEvent.setEntity( loadingEntityEntry.getEntityInstance() )
-										.setId( entityKey.getIdentifier() )
-										.setPersister( loadingEntityEntry.getDescriptor() );
-								listenerGroup.fireEventOnEachListener(
-										postLoadEvent,
-										PostLoadEventListener::onPostLoad
-								);
-							}
-
-							if ( callback != null ) {
-								callback.invokeAfterLoadActions(
-										loadingEntityEntry.getEntityInstance(),
-										loadingEntityEntry.getDescriptor(),
-										getSession()
-								);
-							}
-						}
-					}
-			);
-		}
-		loadingEntityMap = null;
-
-		if ( reloadedEntityMap != null ) {
-			if ( callback != null ) {
-				reloadedEntityMap.forEach(
-						(entityKey, loadingEntityEntry) -> {
-							callback.invokeAfterLoadActions(
-									loadingEntityEntry.getEntityInstance(),
-									loadingEntityEntry.getDescriptor(),
-									getSession()
-							);
-						}
-				);
-			}
-			reloadedEntityMap = null;
-		}
+//		final Callback callback = executionContext.getCallback();
+//		if ( loadingEntityMap != null ) {
+//			final EventListenerGroup<PostLoadEventListener> listenerGroup = executionContext.getSession().getFactory()
+//					.getFastSessionServices()
+//					.eventListenerGroup_POST_LOAD;
+//
+//			loadingEntityMap.forEach(
+//					(entityKey, loadingEntityEntry) -> {
+//						if ( loadingEntityEntry.getEntityInstance() != null ) {
+//							if ( postLoadEvent != null ) {
+//								postLoadEvent.reset();
+//								postLoadEvent.setEntity( loadingEntityEntry.getEntityInstance() )
+//										.setId( entityKey.getIdentifier() )
+//										.setPersister( loadingEntityEntry.getDescriptor() );
+//								listenerGroup.fireEventOnEachListener(
+//										postLoadEvent,
+//										PostLoadEventListener::onPostLoad
+//								);
+//							}
+//
+//							if ( callback != null ) {
+//								callback.invokeAfterLoadActions(
+//										loadingEntityEntry.getEntityInstance(),
+//										loadingEntityEntry.getDescriptor(),
+//										getSession()
+//								);
+//							}
+//						}
+//					}
+//			);
+//		}
+//		loadingEntityMap = null;
+//
+//		if ( reloadedEntityMap != null ) {
+//			if ( callback != null ) {
+//				reloadedEntityMap.forEach(
+//						(entityKey, loadingEntityEntry) -> {
+//							callback.invokeAfterLoadActions(
+//									loadingEntityEntry.getEntityInstance(),
+//									loadingEntityEntry.getDescriptor(),
+//									getSession()
+//							);
+//						}
+//				);
+//			}
+//			reloadedEntityMap = null;
+//		}
 	}
 
 	@SuppressWarnings("SimplifiableIfStatement")

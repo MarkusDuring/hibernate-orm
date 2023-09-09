@@ -11,6 +11,7 @@ import java.util.function.Consumer;
 import org.hibernate.FetchNotFoundException;
 import org.hibernate.Hibernate;
 import org.hibernate.annotations.NotFoundAction;
+import org.hibernate.engine.spi.EntityHolder;
 import org.hibernate.engine.spi.EntityKey;
 import org.hibernate.engine.spi.PersistenceContext;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
@@ -140,16 +141,8 @@ public class EntitySelectFetchInitializer extends AbstractFetchParentAccess impl
 		final EntityKey entityKey = new EntityKey( entityIdentifier, concreteDescriptor );
 
 		final PersistenceContext persistenceContext = session.getPersistenceContextInternal();
-		entityInstance = persistenceContext.getEntity( entityKey );
-		if ( entityInstance != null && Hibernate.isInitialized( entityInstance )) {
-			isInitialized = true;
-			return;
-		}
-
-		final LoadContexts loadContexts = session.getPersistenceContext().getLoadContexts();
-		final LoadingEntityEntry existingLoadingEntry = loadContexts.findLoadingEntityEntry( entityKey );
-
-		if ( existingLoadingEntry != null ) {
+		final EntityHolder holder = persistenceContext.getEntityHolder( entityKey );
+		if ( holder != null ) {
 			if ( EntityLoadingLogging.ENTITY_LOADING_LOGGER.isDebugEnabled() ) {
 				EntityLoadingLogging.ENTITY_LOADING_LOGGER.debugf(
 						"(%s) Found existing loading entry [%s] - using loading instance",
@@ -160,31 +153,76 @@ public class EntitySelectFetchInitializer extends AbstractFetchParentAccess impl
 						)
 				);
 			}
-			this.entityInstance = existingLoadingEntry.getEntityInstance();
-
-			final EntityInitializer entityInitializer = existingLoadingEntry.getEntityInitializer();
-			if ( entityInitializer != this ) {
+			entityInstance = holder.getEntity();
+			if ( holder.getEntityInitializer() == null ) {
+				if ( entityInstance != null && Hibernate.isInitialized( entityInstance ) ) {
+					isInitialized = true;
+					return;
+				}
+			}
+			else if ( holder.getEntityInitializer() != this ) {
 				// the entity is already being loaded elsewhere
 				if ( EntityLoadingLogging.ENTITY_LOADING_LOGGER.isDebugEnabled() ) {
 					EntityLoadingLogging.ENTITY_LOADING_LOGGER.debugf(
 							"(%s) Entity [%s] being loaded by another initializer [%s] - skipping processing",
 							CONCRETE_NAME,
 							toLoggableString( getNavigablePath(), entityIdentifier ),
-							entityInitializer
+							holder.getEntityInitializer()
 					);
 				}
-
-				// EARLY EXIT!!!
 				isInitialized = true;
 				return;
 			}
-			else {
-				if ( entityInstance == null ) {
-					isInitialized = true;
-					return;
-				}
+			else if ( entityInstance == null ) {
+				isInitialized = true;
+				return;
 			}
 		}
+//		entityInstance = persistenceContext.getEntity( entityKey );
+//		if ( entityInstance != null && Hibernate.isInitialized( entityInstance )) {
+//			isInitialized = true;
+//			return;
+//		}
+//
+//		final LoadContexts loadContexts = session.getPersistenceContext().getLoadContexts();
+//		final LoadingEntityEntry existingLoadingEntry = loadContexts.findLoadingEntityEntry( entityKey );
+//
+//		if ( existingLoadingEntry != null ) {
+//			if ( EntityLoadingLogging.ENTITY_LOADING_LOGGER.isDebugEnabled() ) {
+//				EntityLoadingLogging.ENTITY_LOADING_LOGGER.debugf(
+//						"(%s) Found existing loading entry [%s] - using loading instance",
+//						CONCRETE_NAME,
+//						toLoggableString(
+//								getNavigablePath(),
+//								entityIdentifier
+//						)
+//				);
+//			}
+//			this.entityInstance = existingLoadingEntry.getEntityInstance();
+//
+//			final EntityInitializer entityInitializer = existingLoadingEntry.getEntityInitializer();
+//			if ( entityInitializer != this ) {
+//				// the entity is already being loaded elsewhere
+//				if ( EntityLoadingLogging.ENTITY_LOADING_LOGGER.isDebugEnabled() ) {
+//					EntityLoadingLogging.ENTITY_LOADING_LOGGER.debugf(
+//							"(%s) Entity [%s] being loaded by another initializer [%s] - skipping processing",
+//							CONCRETE_NAME,
+//							toLoggableString( getNavigablePath(), entityIdentifier ),
+//							entityInitializer
+//					);
+//				}
+//
+//				// EARLY EXIT!!!
+//				isInitialized = true;
+//				return;
+//			}
+//			else {
+//				if ( entityInstance == null ) {
+//					isInitialized = true;
+//					return;
+//				}
+//			}
+//		}
 
 		if ( EntityLoadingLogging.ENTITY_LOADING_LOGGER.isDebugEnabled() ) {
 			EntityLoadingLogging.ENTITY_LOADING_LOGGER.debugf(
@@ -210,6 +248,12 @@ public class EntitySelectFetchInitializer extends AbstractFetchParentAccess impl
 							entityKey,
 							new LoadingEntityEntry( this, entityKey, concreteDescriptor, entityInstance )
 					);
+			rowProcessingState.getSession().getPersistenceContextInternal().getEntityHolderOrCreateInitializing(
+					entityKey,
+					entityInstance,
+					rowProcessingState.getJdbcValuesSourceProcessingState(),
+					this
+			);
 		}
 
 		if ( EntityLoadingLogging.ENTITY_LOADING_LOGGER.isDebugEnabled() ) {
