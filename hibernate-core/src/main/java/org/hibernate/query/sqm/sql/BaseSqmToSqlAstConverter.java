@@ -3347,6 +3347,14 @@ public abstract class BaseSqmToSqlAstConverter<T extends Statement> extends Base
 			}
 		}
 
+		final TableGroupJoin joinForPredicate;
+		if ( !joinedTableGroup.getNestedTableGroupJoins().isEmpty() || joinedTableGroup.getTableGroupJoins().isEmpty() ) {
+			joinForPredicate = joinedTableGroupJoin;
+		}
+		else {
+			joinForPredicate = joinedTableGroup.getTableGroupJoins().get( joinedTableGroup.getTableGroupJoins().size() - 1 );
+		}
+
 		// add any additional join restrictions
 		if ( sqmJoin.getJoinPredicate() != null ) {
 			if ( sqmJoin.isFetched() ) {
@@ -3355,13 +3363,21 @@ public abstract class BaseSqmToSqlAstConverter<T extends Statement> extends Base
 
 			final SqmJoin<?, ?> oldJoin = currentlyProcessingJoin;
 			currentlyProcessingJoin = sqmJoin;
-			joinedTableGroupJoin.applyPredicate( visitNestedTopLevelPredicate( sqmJoin.getJoinPredicate() ) );
+			final Predicate predicate = visitNestedTopLevelPredicate( sqmJoin.getJoinPredicate() );
+			// If translating the join predicate didn't initialize the table group,
+			// we can safely apply it on the collection table group instead
+			if ( joinForPredicate.getJoinedGroup().isInitialized() ) {
+				joinForPredicate.applyPredicate( predicate );
+			}
+			else {
+				joinedTableGroupJoin.applyPredicate( predicate );
+			}
 			currentlyProcessingJoin = oldJoin;
 		}
 		// Since joins on treated paths will never cause table pruning, we need to add a join condition for the treat
 		if ( sqmJoin.getLhs() instanceof SqmTreatedPath<?, ?> ) {
 			final SqmTreatedPath<?, ?> treatedPath = (SqmTreatedPath<?, ?>) sqmJoin.getLhs();
-			joinedTableGroupJoin.applyPredicate(
+			joinForPredicate.applyPredicate(
 					createTreatTypeRestriction(
 							treatedPath.getWrappedPath(),
 							treatedPath.getTreatTarget()
