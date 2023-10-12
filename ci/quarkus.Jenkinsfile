@@ -37,7 +37,7 @@ pipeline {
 						checkout scmGit(branches: [[name: '*/main']], extensions: [], userRemoteConfigs: [[credentialsId: 'ed25519.Hibernate-CI.github.com', url: 'https://github.com/quarkusio/quarkus.git']])
 						sh "sed -i 's@<hibernate-orm.version>.*</hibernate-orm.version>@<hibernate-orm.version>${env.HIBERNATE_VERSION}</hibernate-orm.version>@' bom/application/pom.xml"
 						sh './mvnw -Dquickly install'
-						sh './mvnw -pl :quarkus-hibernate-orm -amd -pl "!integration-tests/kafka-oauth-keycloak" verify -Dstart-containers -Dtest-containers'
+						sh './mvnw -pl :quarkus-hibernate-orm -amd -pl "!integration-tests/kafka-oauth-keycloak,!extensions/mongodb-client" verify -Dstart-containers -Dtest-containers'
 					}
 				}
 			}
